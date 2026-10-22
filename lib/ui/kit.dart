@@ -1456,105 +1456,114 @@ class SoraDialog extends StatelessWidget {
             decorationColor: Colors.transparent,
             color: p.text,
           ),
-      child: GlassPanel(
-        blur: 0,
-        radius: 26,
-        padding: EdgeInsets.zero,
-        width: width,
-        tint: p.isLight ? const Color(0xF2F7F8FB) : const Color(0xF20C1119),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: p.isLight
-              ? [
-                  Colors.white.withValues(alpha: 0.95),
-                  Colors.white.withValues(alpha: 0.82),
-                ]
-              : [
-                  Color(0xFF1A2130).withValues(alpha: 0.96),
-                  Color(0xFF0A0E15).withValues(alpha: 0.97),
-                ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(26, 24, 20, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (icon != null) ...[
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: tint.withValues(alpha: 0.13),
-                        borderRadius: BorderRadius.circular(13),
-                        border: Border.all(color: tint.withValues(alpha: 0.25)),
-                      ),
-                      child: Icon(icon, size: 20, color: tint),
-                    ),
-                    const SizedBox(width: 14),
+      child: Material(
+        color: Colors.transparent,
+        child: GlassPanel(
+          blur: 0,
+          radius: 26,
+          padding: EdgeInsets.zero,
+          width: width,
+          tint: p.isLight ? const Color(0xF2F7F8FB) : const Color(0xF20C1119),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: p.isLight
+                ? [
+                    Colors.white.withValues(alpha: 0.95),
+                    Colors.white.withValues(alpha: 0.82),
+                  ]
+                : [
+                    Color(0xFF1A2130).withValues(alpha: 0.96),
+                    Color(0xFF0A0E15).withValues(alpha: 0.97),
                   ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.4,
-                            color: p.text,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(26, 24, 20, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (icon != null) ...[
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: tint.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(
+                            color: tint.withValues(alpha: 0.25),
                           ),
                         ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: 4),
+                        child: Icon(icon, size: 20, color: tint),
+                      ),
+                      const SizedBox(width: 14),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            subtitle!,
+                            title,
                             style: TextStyle(
-                              fontSize: 12.5,
-                              color: p.muted,
-                              height: 1.4,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.4,
+                              color: p.text,
                             ),
                           ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle!,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: p.muted,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  if (showClose)
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: Icon(Icons.close_rounded, size: 19, color: p.muted),
-                      splashRadius: 20,
-                    ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(26, 20, 26, 24),
-                children: [child],
-              ),
-            ),
-            if (actions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(26, 0, 26, 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    for (var i = 0; i < actions.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 10),
-                      Flexible(child: actions[i]),
-                    ],
+                    if (showClose)
+                      IconButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 19,
+                          color: p.muted,
+                        ),
+                        splashRadius: 20,
+                      ),
                   ],
                 ),
               ),
-          ],
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(26, 20, 26, 24),
+                  children: [child],
+                ),
+              ),
+              if (actions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(26, 0, 26, 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 10),
+                        Flexible(child: actions[i]),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

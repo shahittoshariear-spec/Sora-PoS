@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sora_pos/analytics.dart';
@@ -9,6 +11,7 @@ import 'package:sora_pos/screens/till.dart';
 import 'package:sora_pos/store.dart';
 import 'package:sora_pos/ui/kit.dart';
 import 'package:sora_pos/ui/theme.dart';
+import 'package:sora_pos/widgets/switch_account.dart';
 
 void main() {
   group('passwords', () {
@@ -200,5 +203,75 @@ void main() {
     final topLeft = tester.getTopLeft(find.byType(GlassButton));
     await tester.tapAt(topLeft + const Offset(12, 12));
     expect(taps, 1);
+  });
+
+  testWidgets('switching account requires a password and holds the open sale', (
+    tester,
+  ) async {
+    final dir = Directory.systemTemp.createTempSync('sora-switch-test');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    final store = Store();
+    store.data = buildDemoData();
+    store.current = store.owner;
+    store.rootDir = dir;
+    store.backupDir = Directory('${dir.path}/backups')..createSync();
+    store.journalDir = Directory('${dir.path}/journals')..createSync();
+    store.dataFile = File('${dir.path}/sora-pos-data.json');
+
+    final cart = CartController();
+    cart.add(store.data.products.first);
+    final holdsBefore = store.data.holds.length;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildSoraTheme(SoraPalette.named.first, 0),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () =>
+                    showSwitchAccountSheet(context, store: store, cart: cart),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Liam Harrison'), findsOneWidget);
+    expect(find.text('CURRENT'), findsOneWidget);
+
+    await tester.tap(find.text('Liam Harrison'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Switch to Liam Harrison'), findsOneWidget);
+
+    final password = find.byType(TextField);
+    await tester.enterText(password, 'wrong');
+    await tester.tap(find.widgetWithText(GlassButton, 'Switch'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('That password was not recognised.'), findsOneWidget);
+    expect(store.current?.name, 'Ren Arn');
+    expect(store.data.holds, hasLength(holdsBefore));
+
+    await tester.enterText(password, 'manager1234');
+    await tester.tap(find.widgetWithText(GlassButton, 'Switch'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(store.current?.name, 'Liam Harrison');
+    expect(cart.lines, isEmpty);
+    expect(store.data.holds, hasLength(holdsBefore + 1));
+    final hold = store.data.holds.last;
+    expect(hold.cashierName, 'Ren Arn');
+    expect(hold.label, contains('Liam Harrison'));
   });
 }

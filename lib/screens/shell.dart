@@ -12,6 +12,7 @@ import '../store.dart';
 import '../ui/kit.dart';
 import '../ui/theme.dart';
 import '../widgets/authorize.dart';
+import '../widgets/switch_account.dart';
 import 'ledger.dart';
 import 'overview.dart';
 import 'reports.dart';
@@ -155,6 +156,10 @@ class _AppShellState extends State<AppShell>
     }
     widget.cart.clear();
     store.signOut();
+  }
+
+  Future<void> _switchAccount() {
+    return showSwitchAccountSheet(context, store: store, cart: widget.cart);
   }
 
   Future<void> _confirmSignOut() async {
@@ -325,6 +330,7 @@ class _AppShellState extends State<AppShell>
                           store: store,
                           section: _section,
                           onGo: goTo,
+                          onSwitchAccount: _switchAccount,
                           onSignOut: _confirmSignOut,
                         ),
                       ),
@@ -341,6 +347,7 @@ class _AppShellState extends State<AppShell>
                       rail: !wide,
                       now: _now,
                       onGo: goTo,
+                      onSwitchAccount: _switchAccount,
                       onSignOut: _confirmSignOut,
                     ),
                     Expanded(child: _mainContent(topNav: true)),
@@ -356,6 +363,7 @@ class _AppShellState extends State<AppShell>
                     rail: rail,
                     now: _now,
                     onGo: goTo,
+                    onSwitchAccount: _switchAccount,
                     onSignOut: _confirmSignOut,
                   ),
                   Expanded(child: _mainContent(topNav: false)),
@@ -595,6 +603,7 @@ class _SideNav extends StatelessWidget {
   final bool rail;
   final DateTime now;
   final Future<bool> Function(String) onGo;
+  final VoidCallback onSwitchAccount;
   final VoidCallback onSignOut;
 
   const _SideNav({
@@ -603,6 +612,7 @@ class _SideNav extends StatelessWidget {
     required this.rail,
     required this.now,
     required this.onGo,
+    required this.onSwitchAccount,
     required this.onSignOut,
   });
 
@@ -718,7 +728,12 @@ class _SideNav extends StatelessWidget {
                 ),
               const SizedBox(height: 6),
               if (staff != null)
-                _UserCard(staff: staff, rail: rail, onSignOut: onSignOut)
+                _UserCard(
+                  staff: staff,
+                  rail: rail,
+                  onSwitchAccount: onSwitchAccount,
+                  onSignOut: onSignOut,
+                )
               else
                 Padding(
                   padding: const EdgeInsets.all(10),
@@ -739,12 +754,14 @@ class _CommandDock extends StatelessWidget {
   final Store store;
   final String section;
   final Future<bool> Function(String) onGo;
+  final VoidCallback onSwitchAccount;
   final VoidCallback onSignOut;
 
   const _CommandDock({
     required this.store,
     required this.section,
     required this.onGo,
+    required this.onSwitchAccount,
     required this.onSignOut,
   });
 
@@ -843,85 +860,84 @@ class _CommandDock extends StatelessWidget {
                   color: p.hairline,
                 ),
                 if (staff != null)
-                  Tooltip(
-                    message:
-                        '${staff.name} · ${staff.role.label} — click to sign out',
-                    child: GestureDetector(
-                      onTap: onSignOut,
-                      child: Container(
-                        height: 42,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: compact ? 7 : 9,
+                  _AccountMenu(
+                    tooltip: 'Switch account or sign out',
+                    openUp: true,
+                    onSwitchAccount: onSwitchAccount,
+                    onSignOut: onSignOut,
+                    child: Container(
+                      height: 42,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 7 : 9,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(13),
+                        color: p.raised.withValues(
+                          alpha: p.isLight ? 0.5 : 0.35,
                         ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(13),
-                          color: p.raised.withValues(
-                            alpha: p.isLight ? 0.5 : 0.35,
-                          ),
-                          border: Border.all(color: p.hairline),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 26,
-                              height: 26,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: p.accentGradient,
-                              ),
-                              child: Text(
-                                staff.initials,
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: p.accent.computeLuminance() > 0.47
-                                      ? const Color(0xFF08120F)
-                                      : Colors.white,
-                                ),
+                        border: Border.all(color: p.hairline),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: p.accentGradient,
+                            ),
+                            child: Text(
+                              staff.initials,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: p.accent.computeLuminance() > 0.47
+                                    ? const Color(0xFF08120F)
+                                    : Colors.white,
                               ),
                             ),
-                            if (!compact) ...[
-                              const SizedBox(width: 8),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 96,
-                                    ),
-                                    child: Text(
-                                      staff.name,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: p.text,
-                                        height: 1.1,
-                                      ),
-                                    ),
+                          ),
+                          if (!compact) ...[
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 96,
                                   ),
-                                  Text(
-                                    staff.role.label,
+                                  child: Text(
+                                    staff.name,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 8.5,
-                                      color: p.faint,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: p.text,
+                                      height: 1.1,
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                Icons.logout_rounded,
-                                size: 13,
-                                color: p.faint,
-                              ),
-                            ],
+                                ),
+                                Text(
+                                  staff.role.label,
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    color: p.faint,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.expand_more_rounded,
+                              size: 15,
+                              color: p.faint,
+                            ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -1184,11 +1200,13 @@ class _NavTileState extends State<_NavTile> {
 class _UserCard extends StatelessWidget {
   final Staff staff;
   final bool rail;
+  final VoidCallback onSwitchAccount;
   final VoidCallback onSignOut;
 
   const _UserCard({
     required this.staff,
     required this.rail,
+    required this.onSwitchAccount,
     required this.onSignOut,
   });
 
@@ -1219,57 +1237,54 @@ class _UserCard extends StatelessWidget {
       ),
     );
     if (rail) {
-      return Tooltip(
-        message: '${staff.name} · ${staff.role.label}',
-        child: GestureDetector(
-          onTap: onSignOut,
-          child: Center(child: avatar),
-        ),
+      return _AccountMenu(
+        tooltip: '${staff.name} · ${staff.role.label}',
+        openUp: true,
+        onSwitchAccount: onSwitchAccount,
+        onSignOut: onSignOut,
+        child: Center(child: avatar),
       );
     }
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
-      decoration: BoxDecoration(
-        color: p.raised,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: p.hairline),
-      ),
-      child: Row(
-        children: [
-          avatar,
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  staff.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: p.text,
+    return _AccountMenu(
+      tooltip: 'Switch account or sign out',
+      openUp: true,
+      onSwitchAccount: onSwitchAccount,
+      onSignOut: onSignOut,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+        decoration: BoxDecoration(
+          color: p.raised,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: p.hairline),
+        ),
+        child: Row(
+          children: [
+            avatar,
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    staff.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: p.text,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  staff.role.label,
-                  style: TextStyle(fontSize: 9.5, color: p.muted),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    staff.role.label,
+                    style: TextStyle(fontSize: 9.5, color: p.muted),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Tooltip(
-            message: 'Sign out',
-            child: IconButton(
-              onPressed: onSignOut,
-              icon: Icon(Icons.logout_rounded, size: 15, color: p.faint),
-              splashRadius: 16,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-            ),
-          ),
-        ],
+            Icon(Icons.more_horiz_rounded, size: 17, color: p.faint),
+          ],
+        ),
       ),
     );
   }
@@ -1281,6 +1296,7 @@ class _TopNav extends StatelessWidget {
   final bool rail;
   final DateTime now;
   final Future<bool> Function(String) onGo;
+  final VoidCallback onSwitchAccount;
   final VoidCallback onSignOut;
 
   const _TopNav({
@@ -1289,6 +1305,7 @@ class _TopNav extends StatelessWidget {
     required this.rail,
     required this.now,
     required this.onGo,
+    required this.onSwitchAccount,
     required this.onSignOut,
   });
 
@@ -1403,49 +1420,139 @@ class _TopNav extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             if (staff != null)
-              Tooltip(
-                message:
-                    '${staff.name} · ${staff.role.label} — click to sign out',
-                child: GestureDetector(
-                  onTap: onSignOut,
-                  child: Container(
-                    height: 38,
-                    padding: EdgeInsets.symmetric(horizontal: rail ? 8 : 12),
-                    decoration: BoxDecoration(
-                      color: p.raised,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: p.hairline),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.person_outline_rounded,
-                          size: 15,
-                          color: p.accent,
-                        ),
-                        if (!rail) ...[
-                          const SizedBox(width: 7),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 110),
-                            child: Text(
-                              staff.name,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: p.text,
-                                fontWeight: FontWeight.w500,
-                              ),
+              _AccountMenu(
+                tooltip: 'Switch account or sign out',
+                openUp: false,
+                onSwitchAccount: onSwitchAccount,
+                onSignOut: onSignOut,
+                child: Container(
+                  height: 38,
+                  padding: EdgeInsets.symmetric(horizontal: rail ? 8 : 12),
+                  decoration: BoxDecoration(
+                    color: p.raised,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: p.hairline),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline_rounded,
+                        size: 15,
+                        color: p.accent,
+                      ),
+                      if (!rail) ...[
+                        const SizedBox(width: 7),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 110),
+                          child: Text(
+                            staff.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: p.text,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ],
+                        ),
+                        const SizedBox(width: 5),
+                        Icon(
+                          Icons.expand_more_rounded,
+                          size: 15,
+                          color: p.faint,
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+}
+
+enum _AccountAction { switchAccount, signOut }
+
+/// The small person menu that hangs off the sidebar card, the top-nav chip and
+/// the command dock. It keeps sign-out where it was and adds the faster
+/// switch-account path.
+class _AccountMenu extends StatelessWidget {
+  final Widget child;
+  final String tooltip;
+  final bool openUp;
+  final VoidCallback onSwitchAccount;
+  final VoidCallback onSignOut;
+
+  const _AccountMenu({
+    required this.child,
+    required this.tooltip,
+    required this.openUp,
+    required this.onSwitchAccount,
+    required this.onSignOut,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return PopupMenuButton<_AccountAction>(
+      tooltip: tooltip,
+      position: openUp ? PopupMenuPosition.over : PopupMenuPosition.under,
+      offset: openUp ? const Offset(0, -96) : const Offset(0, 6),
+      color: p.matte
+          ? p.surfaceRaised
+          : (p.isLight ? const Color(0xFFF8F9FC) : const Color(0xFF141A24)),
+      elevation: 18,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: p.hairline),
+      ),
+      onSelected: (value) {
+        if (value == _AccountAction.switchAccount) {
+          onSwitchAccount();
+        } else {
+          onSignOut();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: _AccountAction.switchAccount,
+          height: 42,
+          child: Row(
+            children: [
+              Icon(Icons.switch_account_rounded, size: 17, color: p.accent),
+              const SizedBox(width: 10),
+              Text(
+                'Switch account',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: p.text,
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: _AccountAction.signOut,
+          height: 42,
+          child: Row(
+            children: [
+              Icon(Icons.logout_rounded, size: 17, color: p.danger),
+              const SizedBox(width: 10),
+              Text(
+                'Sign out',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: p.danger,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: child,
     );
   }
 }
