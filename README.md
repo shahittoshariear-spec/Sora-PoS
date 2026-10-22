@@ -15,6 +15,10 @@ account, no cloud and no internet connection is required to sell.
 | --- | --- | --- |
 | ![Till](screenshots/01-till.png) | ![Appearance](screenshots/07-appearance.png) | ![Brand boot](screenshots/boot/boot-0560.png) |
 
+| Account menu | Switch account |
+| --- | --- |
+| ![Account menu](screenshots/account-menu.png) | ![Switch account](screenshots/account-sheet.png) |
+
 ---
 
 ## Features
@@ -55,6 +59,9 @@ account, no cloud and no internet connection is required to sell.
 - Cashier: Till only
 - Manager: Till, Stock and Ledger
 - Owner: everything, including Overview, Reports and Setup
+- Switch account from the bottom-left person menu without closing the shop;
+  each person types their own password, and an open sale is held for the person
+  leaving
 - Salted SHA-256 passwords
 - A private audit journal for removed till lines, cleared carts, discarded
   holds, stock edits, price changes, overrides, deleted products and voids
