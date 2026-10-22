@@ -1,0 +1,108 @@
+name: sora_pos
+description: "Sora PoS - a calm, offline point of sale with an aurora glass interface."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  crypto: ^3.0.7
+  intl: ^0.20.3
+  pdf: ^3.13.1
+  mailer: ^7.2.0
+  phosphor_flutter: ^2.1.0
+  ffi: ^2.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/ico/
+    - assets/sounds/
+    - assets/bin/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter-400.ttf
+          weight: 400
+        - asset: assets/fonts/inter-500.ttf
+          weight: 500
+        - asset: assets/fonts/inter-600.ttf
+          weight: 600
+        - asset: assets/fonts/inter-700.ttf
+          weight: 700
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/manrope-400.ttf
+          weight: 400
+        - asset: assets/fonts/manrope-500.ttf
+          weight: 500
+        - asset: assets/fonts/manrope-700.ttf
+          weight: 700
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/outfit-400.ttf
+          weight: 400
+        - asset: assets/fonts/outfit-500.ttf
+          weight: 500
+        - asset: assets/fonts/outfit-700.ttf
+          weight: 700
+    - family: Space Grotesk
+      fonts:
+        - asset: assets/fonts/space-grotesk-400.ttf
+          weight: 400
+        - asset: assets/fonts/space-grotesk-500.ttf
+          weight: 500
+        - asset: assets/fonts/space-grotesk-700.ttf
+          weight: 700
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/dm-sans-400.ttf
+          weight: 400
+        - asset: assets/fonts/dm-sans-500.ttf
+          weight: 500
+        - asset: assets/fonts/dm-sans-700.ttf
+          weight: 700
+    - family: Plus Jakarta Sans
+      fonts:
+        - asset: assets/fonts/plus-jakarta-sans-400.ttf
+          weight: 400
+        - asset: assets/fonts/plus-jakarta-sans-500.ttf
+          weight: 500
+        - asset: assets/fonts/plus-jakarta-sans-700.ttf
+          weight: 700
+    - family: Playfair Display
+      fonts:
+        - asset: assets/fonts/playfair-display-400.ttf
+          weight: 400
+        - asset: assets/fonts/playfair-display-500.ttf
+          weight: 500
+        - asset: assets/fonts/playfair-display-700.ttf
+          weight: 700
+    - family: Lora
+      fonts:
+        - asset: assets/fonts/lora-400.ttf
+          weight: 400
+        - asset: assets/fonts/lora-500.ttf
+          weight: 500
+        - asset: assets/fonts/lora-700.ttf
+          weight: 700
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/jetbrains-mono-400.ttf
+          weight: 400
+        - asset: assets/fonts/jetbrains-mono-500.ttf
+          weight: 500
+        - asset: assets/fonts/jetbrains-mono-700.ttf
+          weight: 700
