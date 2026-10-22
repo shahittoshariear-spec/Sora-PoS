@@ -336,7 +336,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         _ThemeDots(store: store, wrap: true),
                         const SizedBox(height: 24),
                         Text(
-                          'Sora PoS · v0.1\nOffline, private, yours.',
+                          'Sora PoS · v0.2\nOffline, private, yours.',
                           style: TextStyle(
                             fontSize: 10.5,
                             height: 1.55,

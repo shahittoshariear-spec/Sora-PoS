@@ -7,7 +7,7 @@ Lyra PoS, but rebuilds the interface, motion and drag handling from scratch. No
 account, no cloud and no internet connection is required to sell.
 
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](#requirements)
-[![Version](https://img.shields.io/badge/version-0.1.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.1)
+[![Version](https://img.shields.io/badge/version-0.2.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.2)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.7-02569B)](https://flutter.dev)
 [![Rust](https://img.shields.io/badge/Rust-stable-000000)](https://www.rust-lang.org)
 
@@ -144,13 +144,13 @@ network share.
 
 ## Download and install
 
-The current release is **v0.1.0**:
+The current release is **v0.2.0**:
 
-<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.1>
+<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.2>
 
 ### Installer
 
-1. Download `SoraPos-setup-0.1.0.exe`.
+1. Download `SoraPos-setup-0.2.0.exe`.
 2. Run it. The installer is per-user and does not need an administrator prompt.
 3. Launch **Sora PoS** from the Start menu.
 
@@ -300,7 +300,7 @@ With Inno Setup 6 installed:
 powershell -ExecutionPolicy Bypass -File tools/build-installer.ps1
 ```
 
-The installer is written to `release/SoraPos-setup-0.1.0.exe`.
+The installer is written to `release/SoraPos-setup-0.2.0.exe`.
 
 Sora PoS does not use Flutter plugins, so Windows Developer Mode is not
 required. The Rust helper must be copied to `assets/bin/` before building the
@@ -380,9 +380,17 @@ cargo test --manifest-path rust_core/Cargo.toml
 
 ## Version
 
-**0.1.0** — first public build.
+**0.2.0** — account switching and the public v0.2 build.
 
 ## Changelog
+
+### 0.2.0 — 22 Oct 2026
+
+- Switch account from the bottom-left person menu, top-nav chip or command dock.
+- The incoming person types their own password; an open sale is held for the
+  person leaving.
+- Role-restricted navigation updates immediately after a switch.
+- The post-sign-in brand sequence runs for the new person.
 
 ### 0.1.0 — 22 Oct 2026
 
