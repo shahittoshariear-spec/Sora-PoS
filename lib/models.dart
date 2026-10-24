@@ -204,8 +204,10 @@ class Staff {
     return '${parts.first.characters2}${parts.last.characters2}';
   }
 
+  bool get needsPassword => passwordHash.isEmpty || salt.isEmpty;
+
   bool matches(String password) =>
-      Passwords.hash(password, salt) == passwordHash;
+      !needsPassword && Passwords.hash(password, salt) == passwordHash;
 
   Map<String, dynamic> toJson() => {
     'id': id,

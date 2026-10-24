@@ -677,8 +677,12 @@ class _StaffPaneState extends State<_StaffPane> {
                     ),
                   ),
                   StatusPill(
-                    label: person.role.label.toUpperCase(),
-                    color: person.role == Role.owner
+                    label: person.needsPassword
+                        ? 'RESET PASSWORD'
+                        : person.role.label.toUpperCase(),
+                    color: person.needsPassword
+                        ? p.warning
+                        : person.role == Role.owner
                         ? p.accent
                         : person.role == Role.manager
                         ? p.accent2
@@ -750,6 +754,11 @@ class _StaffDialogState extends State<_StaffDialog> {
           role: _role,
         );
       } else {
+        if (widget.staff!.needsPassword && _password.text.isEmpty) {
+          throw StoreException(
+            'This imported account needs a password before it can sign in.',
+          );
+        }
         await widget.store.updateStaff(
           widget.staff!.id,
           name: _name.text,
@@ -769,10 +778,13 @@ class _StaffDialogState extends State<_StaffDialog> {
   @override
   Widget build(BuildContext context) {
     final editing = widget.staff != null;
+    final needsPassword = widget.staff?.needsPassword ?? false;
     return SoraDialog(
       title: editing ? 'Edit ${widget.staff!.name}' : 'Add someone',
       subtitle: editing
-          ? 'Leave the password empty to keep it as it is.'
+          ? (needsPassword
+                ? 'This imported account needs a password before it can sign in.'
+                : 'Leave the password empty to keep it as it is.')
           : 'They sign in with their own password.',
       icon: Icons.badge_outlined,
       width: 500,
@@ -803,7 +815,9 @@ class _StaffDialogState extends State<_StaffDialog> {
           const SizedBox(height: 13),
           SoraField(
             controller: _password,
-            label: editing ? 'New password (optional)' : 'Password',
+            label: editing
+                ? (needsPassword ? 'New password' : 'New password (optional)')
+                : 'Password',
             hint: 'At least four characters',
             icon: Icons.key_rounded,
             obscure: true,

@@ -3,10 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models.dart';
+import '../services/lyra_import.dart';
 import '../store.dart';
 import '../ui/kit.dart';
 import '../ui/theme.dart';
 import '../ui/theme_switcher.dart';
+import '../widgets/lyra_import_dialog.dart';
 
 class SignInScreen extends StatefulWidget {
   final Store store;
@@ -21,8 +23,15 @@ class _SignInScreenState extends State<SignInScreen> {
   final _name = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
+  late final Future<LyraImportPreview?> _lyraPreview;
   String? _error;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lyraPreview = findLyraData();
+  }
 
   @override
   void dispose() {
@@ -87,7 +96,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final hasPeople = store.data.staff.isNotEmpty;
+    final hasPeople = store.data.staff.any((s) => !s.needsPassword);
     return AuroraBackground(
       palette: p,
       animate: !MediaQuery.disableAnimationsOf(context),
@@ -97,7 +106,18 @@ class _SignInScreenState extends State<SignInScreen> {
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
-              child: hasPeople ? _people(p) : _welcome(p),
+              child: hasPeople
+                  ? _people(p)
+                  : FutureBuilder<LyraImportPreview?>(
+                      future: _lyraPreview,
+                      builder: (context, snapshot) => _welcome(
+                        p,
+                        lyra: store.data.staff.isEmpty ? snapshot.data : null,
+                        lyraError: store.data.staff.isEmpty
+                            ? snapshot.error?.toString()
+                            : null,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -105,7 +125,7 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _welcome(SoraPalette p) {
+  Widget _welcome(SoraPalette p, {LyraImportPreview? lyra, String? lyraError}) {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 560),
       child: GlassPanel(
@@ -155,6 +175,28 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 30),
+              if (lyra != null) ...[
+                _LyraFoundCard(
+                  preview: lyra,
+                  onImport: () => showLyraImportDialog(
+                    context,
+                    store: store,
+                    preview: lyra,
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+              if (lyraError != null) ...[
+                Text(
+                  'A Lyra PoS data file was found, but it could not be read. You can still create a new shop.',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.45,
+                    color: p.danger,
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
               SoraField(
                 controller: _shop,
                 label: 'Shop name',
@@ -247,14 +289,13 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Widget _people(SoraPalette p) {
     final shop = store.data.shop.name;
+    final signInStaff = store.data.staff
+        .where((s) => !s.needsPassword)
+        .toList();
     final groups = <Role, List<Staff>>{
-      Role.owner: store.data.staff.where((s) => s.role == Role.owner).toList(),
-      Role.manager: store.data.staff
-          .where((s) => s.role == Role.manager)
-          .toList(),
-      Role.cashier: store.data.staff
-          .where((s) => s.role == Role.cashier)
-          .toList(),
+      Role.owner: signInStaff.where((s) => s.role == Role.owner).toList(),
+      Role.manager: signInStaff.where((s) => s.role == Role.manager).toList(),
+      Role.cashier: signInStaff.where((s) => s.role == Role.cashier).toList(),
     };
     final panelHeight = math.min(720.0, MediaQuery.sizeOf(context).height - 72);
     final panelWidth = math.max(
@@ -418,6 +459,17 @@ class _SignInScreenState extends State<SignInScreen> {
                             const SizedBox(height: 12),
                           ],
                         const SizedBox(height: 6),
+                        if (store.data.staff.any((s) => s.needsPassword)) ...[
+                          Text(
+                            'Imported accounts without a password are hidden until an owner sets one in Setup → Staff & access.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: p.warning,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                        ],
                         Text(
                           store.data.settings.demo ? 'Demo password: demo1234' : 'A forgotten password can be reset by another owner in Setup → Staff & access.',
                           style: TextStyle(
@@ -447,6 +499,65 @@ class _SignInScreenState extends State<SignInScreen> {
       context,
       maxWidth: 430,
       builder: (context) => _PasswordDialog(store: store, staff: staff),
+    );
+  }
+}
+
+class _LyraFoundCard extends StatelessWidget {
+  final LyraImportPreview preview;
+  final VoidCallback onImport;
+
+  const _LyraFoundCard({required this.preview, required this.onImport});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(15, 13, 15, 14),
+      decoration: BoxDecoration(
+        color: p.accent.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.accent.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.move_to_inbox_rounded, size: 18, color: p.accent),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Lyra PoS data found on this PC',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: p.text,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            preview.summary,
+            style: TextStyle(fontSize: 11.5, color: p.muted, height: 1.4),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'You will choose a new owner password. Imported staff will need their passwords reset in Setup → Staff & access.',
+            style: TextStyle(fontSize: 10.5, color: p.faint, height: 1.4),
+          ),
+          const SizedBox(height: 11),
+          GlassButton(
+            label: 'Import this shop',
+            icon: Icons.arrow_forward_rounded,
+            dense: true,
+            expand: true,
+            onPressed: onImport,
+          ),
+        ],
+      ),
     );
   }
 }

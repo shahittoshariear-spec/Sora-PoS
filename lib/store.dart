@@ -129,6 +129,18 @@ class Store extends ChangeNotifier {
     return _writeQueue;
   }
 
+  /// Replaces the shop with a newly imported document and writes it to disk.
+  /// Used by the Lyra PoS first-run import; the caller signs the owner in
+  /// afterwards.
+  Future<void> importData(AppData next) async {
+    data = next;
+    current = null;
+    loaded = true;
+    notice = null;
+    notifyListeners();
+    await saveNow();
+  }
+
   Future<void> _writeFile() async {
     await rootDir.create(recursive: true);
     final text = const JsonEncoder.withIndent('  ').convert(data.toJson());
@@ -425,6 +437,8 @@ class Store extends ChangeNotifier {
         throw StoreException('Use at least four characters for the password.');
       s.salt = Passwords.newSalt();
       s.passwordHash = Passwords.hash(password, s.salt);
+    } else if (s.needsPassword) {
+      throw StoreException('Set a password for this imported account.');
     }
     s.name = clean;
     s.role = nextRole;
