@@ -3,7 +3,7 @@
 ; Then compile this file with Inno Setup 6 (see tools/build-installer.ps1).
 
 #define AppName "Sora PoS"
-#define AppVersion "0.3.0"
+#define AppVersion "0.4.0"
 #define AppPublisher "Sora"
 #define AppExeName "sora_pos.exe"
 #define BuildDir "..\build\windows\x64\runner\Release"

@@ -7,13 +7,17 @@ Lyra PoS, but rebuilds the interface, motion and drag handling from scratch. No
 account, no cloud and no internet connection is required to sell.
 
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](#requirements)
-[![Version](https://img.shields.io/badge/version-0.3.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.3)
+[![Version](https://img.shields.io/badge/version-0.4.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.7-02569B)](https://flutter.dev)
 [![Rust](https://img.shields.io/badge/Rust-stable-000000)](https://www.rust-lang.org)
 
-| Till | Appearance | Sign-in |
+| Till | Product card | Sale complete |
 | --- | --- | --- |
-| ![Till](screenshots/01-till.png) | ![Appearance](screenshots/07-appearance.png) | ![Brand boot](screenshots/boot/boot-0560.png) |
+| ![Till](screenshots/01-till.png) | ![Product card](screenshots/product-sheet.png) | ![Sale complete](screenshots/sale-complete.png) |
+
+| Appearance | Sign-in |
+| --- | --- |
+| ![Appearance](screenshots/07-appearance.png) | ![Brand boot](screenshots/boot/goldfish.png) |
 
 | Account menu | Switch account |
 | --- | --- |
@@ -27,9 +31,15 @@ account, no cloud and no internet connection is required to sell.
 
 - Search or scan anywhere on the Till
 - Category filters and a compact product grid
+- Every product gets a generated mark — a category-tinted swatch with its
+  initials — so the grid has a visual identity without photography
+- Hover a tile for a gentle tilt, a moving rim light and a quick add badge
+- Right-click or hold a tile for a larger product card with stock, price, SKU
+  and an **Add to sale** button
 - Quantity steppers, per-sale price override with approval, holds and resumes
 - Cash, card or a split of both in one payment
 - Quick cash totals, change calculation and a soft sale chime
+- A short receipt-printer ritual with a **PAID** stamp after each sale
 - Resizable cart/receipt pane with snap points
 - Live receipt preview, PDF saving and thermal receipt printing
 - Refunds, partial refunds and voids behind a manager or owner password
@@ -72,9 +82,12 @@ account, no cloud and no internet connection is required to sell.
 - Nine bundled typefaces and four text sizes
 - Sidebar, top navigation or a floating command dock
 - **Glass Blur** and **Matte Flat** surface styles
-- Static aurora background with no continuous animation
+- A still **Sora Field** background with fine grain, caustic light and depth
+  that never drifts, breathes or follows the pointer
+- Theme changes wipe across the screen with a slow, warped edge
 - Reduced-motion support through the Windows setting
-- Short post-sign-in brand sequence, skippable with any key
+- A goldfish constellation after sign-in, whose stars open into the Sora PoS
+  wordmark; skippable with any key
 
 ### Data
 
@@ -96,9 +109,9 @@ knows, but changes the parts that caused friction.
 
 | Area | Sora PoS |
 | --- | --- |
-| Background | A fixed painted scene. It does not drift, breathe or follow the pointer, so it cannot flicker and costs nothing at rest. |
+| Background | A fixed painted field with fine grain and caustic light. It does not drift, breathe or follow the pointer, so it cannot flicker and costs nothing at rest. |
 | Performance | No live backdrop blur. The till divider uses a painted guide and commits the layout once on release, avoiding the per-frame raster work that could make dragging fall behind the cursor. |
-| Visuals | Glass Blur or Matte Flat, nine themes, three custom slots, nine typefaces, four text sizes and three navigation layouts. |
+| Visuals | Generated product marks, a hover tilt and rim light, a larger product card, a receipt-printer sale ritual, Glass Blur or Matte Flat, nine themes, three custom slots, nine typefaces, four text sizes and three navigation layouts. |
 | Accounts | Owner, manager and cashier roles are enforced in navigation and on sensitive actions. |
 | Oversight | A silent audit journal plus a red watch-list block in the daily email report. Staff never see a warning. |
 | Deployment | A per-user installer that needs no administrator prompt, or a portable folder you can copy. |
@@ -145,13 +158,13 @@ network share.
 
 ## Download and install
 
-The current release is **v0.3.0**:
+The current release is **v0.4.0**:
 
-<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.3>
+<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4>
 
 ### Installer
 
-1. Download `SoraPos-setup-0.3.0.exe`.
+1. Download `SoraPos-setup-0.4.0.exe`.
 2. Run it. The installer is per-user and does not need an administrator prompt.
 3. Launch **Sora PoS** from the Start menu.
 
@@ -225,7 +238,9 @@ A few things work differently:
 ### A normal sale
 
 1. Sign in as a cashier, manager or owner.
-2. Search or scan a product, or tap it in the Till grid.
+2. Search or scan a product, or tap it in the Till grid. A left-click adds it
+   to the sale; right-click or hold a tile to open its full card and add it from
+   there.
 3. Adjust quantities in the cart.
 4. Press **F8** or choose **Charge**.
 5. Enter a cash amount, a card amount, or split the two. The other field fills
@@ -247,7 +262,8 @@ password. The signed-in cashier stays signed in.
 - Use **Save PDF**, **Print** or **Email report** from Reports.
 - **Setup → Backups** exports a backup and shows the automatic backups.
 - **Setup → Appearance** changes themes, typefaces, text size, navigation and
-  the surface style.
+  the surface style. Theme changes wipe across the screen from the swatch you
+  tapped.
 - **Setup → Email** configures optional Gmail SMTP reports. The app password is
   stored in Windows Credential Manager, not in the shop data file.
 - **Setup → Danger zone → Reset all data** starts fresh. A safety backup is
@@ -330,7 +346,7 @@ With Inno Setup 6 installed:
 powershell -ExecutionPolicy Bypass -File tools/build-installer.ps1
 ```
 
-The installer is written to `release/SoraPos-setup-0.3.0.exe`.
+The installer is written to `release/SoraPos-setup-0.4.0.exe`.
 
 Sora PoS does not use Flutter plugins, so Windows Developer Mode is not
 required. The Rust helper must be copied to `assets/bin/` before building the
@@ -415,9 +431,23 @@ cargo test --manifest-path rust_core/Cargo.toml
 
 ## Version
 
-**0.3.0** — Lyra PoS import and staff password reset flow.
+**0.4.0** — generated product tiles, a receipt sale ritual, a richer still
+field and a goldfish constellation boot.
 
 ## Changelog
+
+### 0.4.0 — 24 Oct 2026
+
+- Product tiles now grow a category-tinted mark with the product's initials.
+- Hover adds a gentle tilt, a moving rim light and an add badge.
+- Right-click or hold a tile to open a larger product card with stock, price,
+  SKU, margin and an **Add to sale** button.
+- A receipt-printer animation and **PAID** stamp finish each sale; it is
+  skippable with a click or key and skipped under reduced motion.
+- The still background gained fine grain, caustic light and a deeper vignette.
+- Theme changes now wipe with a slow, warped edge.
+- The post-sign-in sequence is a goldfish constellation whose stars open into
+  the Sora PoS wordmark.
 
 ### 0.3.0 — 24 Oct 2026
 

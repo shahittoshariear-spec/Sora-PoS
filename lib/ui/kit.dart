@@ -66,6 +66,75 @@ class _AuroraPainter extends CustomPainter {
 
   _AuroraPainter(this.p);
 
+  static final List<Offset> _grainFine = _makeGrain(1300, 23);
+  static final List<Offset> _grainCoarse = _makeGrain(460, 91);
+
+  static List<Offset> _makeGrain(int count, int seed) {
+    final rnd = math.Random(seed);
+    return List<Offset>.generate(
+      count,
+      (_) => Offset(rnd.nextDouble(), rnd.nextDouble()),
+      growable: false,
+    );
+  }
+
+  List<Offset> _scaled(List<Offset> points, Size size) => [
+    for (final point in points)
+      Offset(point.dx * size.width, point.dy * size.height),
+  ];
+
+  /// Grain is one `drawPoints` call per layer. It keeps the large dark
+  /// gradients from banding and makes the field read as a surface rather than
+  /// a flat fill, without adding a texture lookup or a blur.
+  void _grain(Canvas canvas, Size size) {
+    final ink = p.isLight ? Colors.black : Colors.white;
+    canvas.drawPoints(
+      ui.PointMode.points,
+      _scaled(_grainFine, size),
+      Paint()
+        ..color = ink.withValues(alpha: p.matte ? 0.012 : 0.020)
+        ..strokeWidth = 0.8
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawPoints(
+      ui.PointMode.points,
+      _scaled(_grainCoarse, size),
+      Paint()
+        ..color = ink.withValues(alpha: p.matte ? 0.018 : 0.042)
+        ..strokeWidth = 1.15
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  /// A long, soft ellipse of light. Cheap: one radially shaded circle drawn
+  /// through a scale transform, with no blur filter.
+  void _caustic(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double angle,
+    double stretch,
+    Color color,
+    double alpha,
+  ) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+    canvas.scale(stretch, 0.16);
+    canvas.drawCircle(
+      Offset.zero,
+      radius,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset.zero,
+          radius,
+          [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+          const [0, 1],
+        ),
+    );
+    canvas.restore();
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
@@ -76,8 +145,9 @@ class _AuroraPainter extends CustomPainter {
     final span = math.max(w, h);
 
     if (p.matte) {
-      // Matte Flat: no stars, blobs or sweep. One barely-there tonal wash and
-      // a deeper vignette keep the dark field from looking like dead grey.
+      // Matte Flat: no stars, blobs or light bands. One barely-there tonal wash,
+      // a deeper vignette and a trace of grain keep the dark field from looking
+      // like dead grey or banding.
       canvas.drawRect(
         rect,
         Paint()
@@ -90,6 +160,7 @@ class _AuroraPainter extends CustomPainter {
             ],
           ),
       );
+      _grain(canvas, size);
       final vignette = Paint()
         ..shader = ui.Gradient.radial(
           Offset(w * 0.5, h * 0.46),
@@ -104,6 +175,37 @@ class _AuroraPainter extends CustomPainter {
       return;
     }
 
+    // Three slow caustic bands, painted before the blobs so they read as light
+    // under the surface rather than haze on top of it.
+    final cosmic = Color.lerp(p.accent, const Color(0xFF7C6BFF), 0.42)!;
+    _caustic(
+      canvas,
+      Offset(w * 0.36, h * 0.22),
+      span * 0.52,
+      -0.40,
+      2.7,
+      p.accent,
+      0.046,
+    );
+    _caustic(
+      canvas,
+      Offset(w * 0.72, h * 0.60),
+      span * 0.48,
+      0.34,
+      3.1,
+      cosmic,
+      0.034,
+    );
+    _caustic(
+      canvas,
+      Offset(w * 0.18, h * 0.84),
+      span * 0.42,
+      -0.16,
+      2.2,
+      p.accent2,
+      0.024,
+    );
+
     void blob(Offset center, double radius, Color color, double alpha) {
       final shader = ui.Gradient.radial(
         center,
@@ -115,7 +217,6 @@ class _AuroraPainter extends CustomPainter {
     }
 
     blob(Offset(w * 0.24, h * 0.20), span * 0.54, p.accent, 0.135);
-    final cosmic = Color.lerp(p.accent, const Color(0xFF7C6BFF), 0.42)!;
     blob(Offset(w * 0.84, h * 0.28), span * 0.44, cosmic, 0.08);
     blob(Offset(w * 0.66, h * 0.88), span * 0.50, p.accent, 0.08);
     blob(Offset(w * 0.10, h * 0.82), span * 0.40, cosmic, 0.05);
@@ -123,14 +224,22 @@ class _AuroraPainter extends CustomPainter {
     // A quiet, fixed field of stars, because the shop is called Sora.
     final starPaint = Paint();
     final rnd = math.Random(48);
-    for (var i = 0; i < 48; i++) {
+    final ink = p.isLight ? Colors.black : Colors.white;
+    for (var i = 0; i < 60; i++) {
       final x = rnd.nextDouble() * w;
       final y = rnd.nextDouble() * h * 0.72;
-      starPaint.color = (p.isLight ? Colors.black : Colors.white).withValues(
-        alpha: 0.035 + 0.075 * rnd.nextDouble(),
+      final bright = i % 17 == 0;
+      starPaint.color = ink.withValues(
+        alpha: bright ? 0.15 : 0.035 + 0.075 * rnd.nextDouble(),
       );
-      canvas.drawCircle(Offset(x, y), rnd.nextDouble() * 1.3 + 0.3, starPaint);
+      canvas.drawCircle(
+        Offset(x, y),
+        bright ? 1.6 : rnd.nextDouble() * 1.25 + 0.3,
+        starPaint,
+      );
     }
+
+    _grain(canvas, size);
 
     final vignette = Paint()
       ..shader = ui.Gradient.radial(
@@ -138,7 +247,7 @@ class _AuroraPainter extends CustomPainter {
         span * 0.78,
         [
           Colors.transparent,
-          Colors.black.withValues(alpha: p.isLight ? 0.10 : 0.52),
+          Colors.black.withValues(alpha: p.isLight ? 0.10 : 0.56),
         ],
         [0.55, 1],
       );

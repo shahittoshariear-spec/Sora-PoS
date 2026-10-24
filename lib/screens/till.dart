@@ -16,8 +16,10 @@ import '../services/native.dart';
 import '../services/receipts.dart';
 import '../store.dart';
 import '../ui/kit.dart';
+import '../ui/product_visual.dart';
 import '../ui/theme.dart';
 import '../widgets/authorize.dart';
+import '../widgets/product_sheet.dart';
 import '../widgets/sale_view.dart';
 
 class TillScreen extends StatefulWidget {
@@ -243,6 +245,11 @@ class TillScreenState extends State<TillScreen> {
       );
     }
     focusSearch();
+  }
+
+  Future<void> _showProduct(Product product) async {
+    final add = await showProductSheet(context, store, product);
+    if (add == true && mounted) _add(product);
   }
 
   // --------------------------------------------------------------- payments
@@ -704,6 +711,7 @@ class TillScreenState extends State<TillScreen> {
                           currency: store.currency,
                           lowStock: product.stock <= store.data.shop.lowStock,
                           onTap: () => _add(product),
+                          onDetails: () => _showProduct(product),
                         ),
                       );
                     },
@@ -1691,6 +1699,7 @@ class _ProductCard extends StatefulWidget {
   final String currency;
   final bool lowStock;
   final VoidCallback onTap;
+  final VoidCallback onDetails;
 
   const _ProductCard({
     required this.product,
@@ -1698,145 +1707,351 @@ class _ProductCard extends StatefulWidget {
     required this.currency,
     required this.lowStock,
     required this.onTap,
+    required this.onDetails,
   });
 
   @override
   State<_ProductCard> createState() => _ProductCardState();
 }
 
-class _ProductCardState extends State<_ProductCard> {
-  bool _hover = false;
+class _ProductCardState extends State<_ProductCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _hoverC;
+  final ValueNotifier<Offset> _spec = ValueNotifier(const Offset(0.5, 0.36));
+  late final Listenable _motion = Listenable.merge([_hoverC, _spec]);
+  bool _hovering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hoverC = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hoverC.dispose();
+    _spec.dispose();
+    super.dispose();
+  }
+
+  void _enter(PointerEnterEvent event) {
+    if (!_hovering) setState(() => _hovering = true);
+    _hoverC.forward();
+    _track(event.localPosition);
+  }
+
+  void _trackPosition(PointerHoverEvent event) => _track(event.localPosition);
+
+  void _track(Offset local) {
+    final size = context.size;
+    if (size == null || size.isEmpty) return;
+    _spec.value = Offset(
+      (local.dx / size.width).clamp(0.0, 1.0),
+      (local.dy / size.height).clamp(0.0, 1.0),
+    );
+  }
+
+  void _exit(PointerExitEvent event) {
+    if (_hovering) setState(() => _hovering = false);
+    _hoverC.reverse();
+    _spec.value = const Offset(0.5, 0.36);
+  }
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    final reduced = MediaQuery.disableAnimationsOf(context);
     final out = widget.product.stock <= 0;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 170),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(17),
-            color: _hover ? p.accent.withValues(alpha: 0.10) : p.glassTint,
-            gradient: p.matte
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: _hover
-                        ? [
-                            p.accent.withValues(alpha: 0.15),
-                            p.accent.withValues(alpha: 0.045),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.055),
-                            Colors.white.withValues(alpha: 0.014),
-                          ],
-                  ),
-            border: Border.all(
-              color: _hover ? p.accent.withValues(alpha: 0.45) : p.hairline,
-              width: _hover ? 1.2 : 1,
-            ),
-            boxShadow: _hover && !p.matte
-                ? [
-                    BoxShadow(
-                      color: p.accent.withValues(alpha: 0.16),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
+
+    Widget mark = ProductMark(
+      name: widget.product.name,
+      category: widget.category,
+      size: 44,
+    );
+    if (!reduced) {
+      mark = Hero(tag: productHeroTag(widget.product), child: mark);
+    }
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
+              mark,
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       widget.category.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: overlineStyle(
                         p,
-                        color: _hover ? p.accent : p.faint,
+                        color: _hovering ? p.accent : p.faint,
                       ),
                     ),
-                  ),
-                  if (out)
-                    StatusPill(label: 'OUT', color: p.danger)
-                  else if (widget.lowStock)
-                    StatusPill(
-                      label: '${numText(widget.product.stock)} left',
-                      color: p.warning,
-                    ),
-                  if (_hover && !out)
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 22,
-                      height: 22,
-                      margin: const EdgeInsets.only(left: 6),
-                      decoration: BoxDecoration(
-                        color: p.accent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.add_rounded,
-                        size: 14,
-                        color: p.accent.computeLuminance() > 0.47
-                            ? const Color(0xFF08120F)
-                            : Colors.white,
+                    const SizedBox(height: 3),
+                    Expanded(
+                      child: Text(
+                        widget.product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          height: 1.22,
+                          letterSpacing: -0.15,
+                          color: p.text,
+                        ),
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Text(
-                  widget.product.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    height: 1.25,
-                    letterSpacing: -0.15,
-                    color: p.text,
-                  ),
+                  ],
                 ),
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${widget.currency}${moneyPlain(widget.product.price)}',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                      color: p.text,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (!out && !widget.lowStock)
-                    Text(
-                      '${numText(widget.product.stock)} on shelf',
-                      style: TextStyle(fontSize: 9.5, color: p.faint),
-                    ),
-                ],
               ),
             ],
           ),
         ),
+        const SizedBox(height: 7),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${widget.currency}${moneyPlain(widget.product.price)}',
+              style: TextStyle(
+                fontSize: 18.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+                color: p.text,
+              ),
+            ),
+            const Spacer(),
+            if (out)
+              StatusPill(label: 'OUT', color: p.danger)
+            else if (widget.lowStock)
+              StatusPill(
+                label: '${numText(widget.product.stock)} left',
+                color: p.warning,
+              )
+            else
+              Text(
+                '${numText(widget.product.stock)} on shelf',
+                style: TextStyle(fontSize: 9.5, color: p.faint),
+              ),
+          ],
+        ),
+      ],
+    );
+
+    return MouseRegion(
+      onEnter: _enter,
+      onHover: _trackPosition,
+      onExit: _exit,
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onSecondaryTap: widget.onDetails,
+        onLongPress: widget.onDetails,
+        child: AnimatedBuilder(
+          animation: _motion,
+          builder: (context, child) {
+            final t = reduced ? 0.0 : _hoverC.value;
+            final spec = _spec.value;
+            final dx = spec.dx * 2 - 1;
+            final dy = spec.dy * 2 - 1;
+            final transform = Matrix4.identity()
+              ..setEntry(3, 2, 0.0012)
+              ..rotateX(-dy * 0.050 * t)
+              ..rotateY(dx * 0.060 * t);
+            if (t > 0.001) {
+              final lift = 1 + 0.014 * t;
+              transform.multiply(Matrix4.diagonal3Values(lift, lift, 1));
+            }
+
+            return Transform(
+              alignment: Alignment.center,
+              transform: transform,
+              child: RepaintBoundary(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AnimatedContainer(
+                      duration: reduced
+                          ? Duration.zero
+                          : const Duration(milliseconds: 170),
+                      curve: Curves.easeOut,
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(17),
+                        color: _hovering
+                            ? p.accent.withValues(alpha: p.matte ? 0.10 : 0.08)
+                            : p.glassTint,
+                        gradient: p.matte
+                            ? null
+                            : LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: _hovering
+                                    ? [
+                                        p.accent.withValues(alpha: 0.15),
+                                        p.accent.withValues(alpha: 0.040),
+                                      ]
+                                    : [
+                                        Colors.white.withValues(alpha: 0.055),
+                                        Colors.white.withValues(alpha: 0.014),
+                                      ],
+                              ),
+                        border: Border.all(
+                          color: _hovering
+                              ? p.accent.withValues(
+                                  alpha: p.matte ? 0.48 : 0.34,
+                                )
+                              : p.hairline,
+                          width: _hovering ? 1.2 : 1,
+                        ),
+                        boxShadow: _hovering && !p.matte
+                            ? [
+                                BoxShadow(
+                                  color: p.accent.withValues(alpha: 0.14),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: child,
+                    ),
+                    if (!p.matte && t > 0.001)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            painter: _CardRimPainter(
+                              palette: p,
+                              spec: spec,
+                              strength: t,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      top: 9,
+                      right: 9,
+                      child: IgnorePointer(
+                        child: AnimatedOpacity(
+                          opacity: _hovering && !out ? 1 : 0,
+                          duration: reduced
+                              ? Duration.zero
+                              : const Duration(milliseconds: 150),
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: p.accent,
+                              shape: BoxShape.circle,
+                              boxShadow: p.matte
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: p.accent.withValues(alpha: 0.35),
+                                        blurRadius: 12,
+                                      ),
+                                    ],
+                            ),
+                            child: Icon(
+                              Icons.add_rounded,
+                              size: 14,
+                              color: p.accent.computeLuminance() > 0.47
+                                  ? const Color(0xFF08120F)
+                                  : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          child: content,
+        ),
       ),
     );
   }
+}
+
+/// The moving rim and specular wash over a hovered tile. It is a single
+/// rounded-rect stroke plus one soft radial, so hovering never costs a blur
+/// filter or a shadow pass.
+class _CardRimPainter extends CustomPainter {
+  final SoraPalette palette;
+  final Offset spec;
+  final double strength;
+
+  _CardRimPainter({
+    required this.palette,
+    required this.spec,
+    required this.strength,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(
+      rect.deflate(0.8),
+      const Radius.circular(16.4),
+    );
+    final focus = Offset(spec.dx * size.width, spec.dy * size.height);
+
+    canvas.save();
+    canvas.clipRRect(rrect);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          focus,
+          size.width * 0.85,
+          [
+            palette.accent.withValues(alpha: 0.11 * strength),
+            Colors.transparent,
+          ],
+          const [0, 1],
+        ),
+    );
+    canvas.restore();
+
+    final away = Offset(size.width - focus.dx, size.height - focus.dy);
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..shader = ui.Gradient.linear(
+          focus,
+          away,
+          [
+            palette.accent.withValues(alpha: 0.62 * strength),
+            palette.accent.withValues(alpha: 0.03),
+            palette.accent2.withValues(alpha: 0.34 * strength),
+          ],
+          const [0, 0.52, 1],
+        ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardRimPainter old) =>
+      old.palette.id != palette.id ||
+      old.palette.accent != palette.accent ||
+      old.palette.accent2 != palette.accent2 ||
+      old.spec != spec ||
+      old.strength != strength;
 }
 
 class _PaymentLegend extends StatelessWidget {

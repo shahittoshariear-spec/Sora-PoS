@@ -7,10 +7,13 @@ import 'package:sora_pos/cart.dart';
 import 'package:sora_pos/demo.dart';
 import 'package:sora_pos/format.dart';
 import 'package:sora_pos/models.dart';
+import 'package:sora_pos/screens/brand_boot.dart';
 import 'package:sora_pos/screens/till.dart';
 import 'package:sora_pos/store.dart';
 import 'package:sora_pos/ui/kit.dart';
 import 'package:sora_pos/ui/theme.dart';
+import 'package:sora_pos/widgets/product_sheet.dart';
+import 'package:sora_pos/widgets/sale_view.dart';
 import 'package:sora_pos/widgets/switch_account.dart';
 
 void main() {
@@ -273,5 +276,113 @@ void main() {
     final hold = store.data.holds.last;
     expect(hold.cashierName, 'Ren Arn');
     expect(hold.label, contains('Liam Harrison'));
+  });
+
+  testWidgets('the product sheet separates looking from adding', (
+    tester,
+  ) async {
+    final store = Store();
+    store.data = buildDemoData();
+    store.current = store.owner;
+    final product = store.data.products.first;
+    bool? result;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildSoraTheme(SoraPalette.named.first, 0),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async {
+                  result = await showProductSheet(context, store, product);
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Add to sale'), findsOneWidget);
+    expect(find.text(product.name), findsWidgets);
+    expect(result, isNull, reason: 'opening the card must not add anything');
+
+    await tester.tap(find.widgetWithText(GlassButton, 'Add to sale'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(result, isTrue);
+  });
+
+  testWidgets('the sale receipt stamps PAID once the ritual finishes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildSoraTheme(SoraPalette.named.first, 0),
+        home: const MediaQuery(
+          data: MediaQueryData(size: Size(900, 700)),
+          child: Scaffold(
+            body: Center(
+              child: ReceiptPaper(
+                text: 'SORA\nSale #1001\nTotal 36.80',
+                width: 336,
+                celebrate: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('PAID'), findsNothing);
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.text('PAID'), findsOneWidget);
+  });
+
+  testWidgets('reduced motion shows the paid receipt immediately', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildSoraTheme(SoraPalette.named.first, 0),
+        home: const MediaQuery(
+          data: MediaQueryData(size: Size(900, 700), disableAnimations: true),
+          child: Scaffold(
+            body: Center(
+              child: ReceiptPaper(
+                text: 'SORA\nSale #1001\nTotal 36.80',
+                width: 336,
+                celebrate: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('PAID'), findsOneWidget);
+  });
+
+  testWidgets('the brand boot finishes and hands over', (tester) async {
+    var done = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildSoraTheme(SoraPalette.named.first, 0),
+        home: BrandBootScreen(
+          palette: SoraPalette.named.first,
+          duration: const Duration(milliseconds: 1850),
+          onDone: () => done = true,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('POINT OF SALE'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 2000));
+    expect(done, isTrue);
   });
 }

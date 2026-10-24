@@ -130,7 +130,7 @@ class _SoraAppState extends State<SoraApp> with SingleTickerProviderStateMixin {
     super.initState();
     _spreadController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 780),
+      duration: const Duration(milliseconds: 680),
     );
     ThemeSwitcher.instance.register(_changeTheme);
     store.addListener(_applyWindowChrome);

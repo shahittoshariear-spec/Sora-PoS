@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -675,7 +676,52 @@ class ReceiptPaper extends StatefulWidget {
   State<ReceiptPaper> createState() => _ReceiptPaperState();
 }
 
-class _ReceiptPaperState extends State<ReceiptPaper> {
+class _ReceiptPaperState extends State<ReceiptPaper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ritual;
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ritual = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 860),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!widget.celebrate || _started) return;
+    _started = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _ritual.value = 1;
+    } else {
+      _ritual.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ritual.dispose();
+    super.dispose();
+  }
+
+  void _finishRitual() {
+    if (_ritual.value < 1) _ritual.value = 1;
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (_ritual.value >= 1) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      return KeyEventResult.ignored;
+    }
+    _finishRitual();
+    return KeyEventResult.handled;
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -689,7 +735,6 @@ class _ReceiptPaperState extends State<ReceiptPaper> {
     final paper = Container(
       width: widget.width,
       constraints: BoxConstraints(maxHeight: widget.maxHeight),
-      padding: const EdgeInsets.fromLTRB(17, 20, 17, 16),
       decoration: BoxDecoration(
         color: const Color(0xFFFBFAF6),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
@@ -706,60 +751,260 @@ class _ReceiptPaperState extends State<ReceiptPaper> {
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        child: Text(
-          widget.text,
-          style: TextStyle(
-            fontFamily: 'JetBrains Mono',
-            fontSize: fontSize,
-            height: 1.5,
-            color: const Color(0xFF20242B),
-            letterSpacing: 0,
-          ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+        child: Stack(
+          children: [
+            if (widget.celebrate)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _PaperFibrePainter()),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(17, 20, 17, 16),
+              child: SingleChildScrollView(
+                child: Text(
+                  widget.text,
+                  style: TextStyle(
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: fontSize,
+                    height: 1.5,
+                    color: const Color(0xFF20242B),
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
 
-    final stack = Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.celebrate)
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: 1),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutCubic,
-                builder: (context, t, child) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(6),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: p.accent.withValues(alpha: 0.35 * (1 - t)),
-                        blurRadius: 30,
-                        spreadRadius: 4 * (1 - t),
+    final torn = CustomPaint(
+      size: Size(widget.width, 9),
+      painter: _TornEdgePainter(const Color(0xFFFBFAF6)),
+    );
+
+    if (widget.celebrate) {
+      return SizedBox(
+        width: widget.width + 12,
+        child: Focus(
+          autofocus: true,
+          onKeyEvent: _onKey,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _finishRitual,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: AnimatedBuilder(
+                animation: _ritual,
+                builder: (context, _) {
+                  final t = _ritual.value;
+                  final reveal = Curves.easeOutCubic.transform(
+                    _interval(t, 0, 0.62),
+                  );
+                  final stamp = Curves.easeOutCubic.transform(
+                    _interval(t, 0.56, 0.80),
+                  );
+                  final stampOpacity = _interval(t, 0.56, 0.68);
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _PrinterSlot(p: p, width: widget.width),
+                      const SizedBox(height: 3),
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Reserves the receipt's final size so the dialog
+                          // beside it never reflows while the paper feeds out.
+                          Opacity(
+                            opacity: 0,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [paper, torn],
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: ClipRect(
+                              clipper: _PrintRevealClipper(reveal),
+                              child: Transform.translate(
+                                offset: Offset(0, -10 * (1 - reveal)),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [paper, torn],
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (stampOpacity > 0)
+                            Positioned(
+                              top: 22,
+                              right: 8,
+                              child: IgnorePointer(
+                                child: Opacity(
+                                  opacity: stampOpacity,
+                                  child: Transform.rotate(
+                                    angle: -0.26 + 0.11 * stamp,
+                                    child: Transform.scale(
+                                      scale: 1.45 - 0.45 * stamp,
+                                      child: _PaidStamp(p: p),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
-                  ),
-                  child: child,
-                ),
-                child: paper,
-              )
-            else
-              paper,
-            CustomPaint(
-              size: Size(widget.width, 9),
-              painter: _TornEdgePainter(const Color(0xFFFBFAF6)),
+                  );
+                },
+              ),
             ),
-          ],
+          ),
         ),
-      ],
+      );
+    }
+
+    return SizedBox(
+      width: widget.width + 12,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Column(mainAxisSize: MainAxisSize.min, children: [paper, torn]),
+        ],
+      ),
     );
-    return SizedBox(width: widget.width + 12, child: stack);
   }
+
+  double _interval(double t, double begin, double end) =>
+      ((t - begin) / (end - begin)).clamp(0.0, 1.0);
+}
+
+/// Reveals the receipt from the slot downwards. The paper is laid out at its
+/// full height, so only the clip moves; nothing below it jumps.
+class _PrintRevealClipper extends CustomClipper<Rect> {
+  final double amount;
+  _PrintRevealClipper(this.amount);
+
+  @override
+  Rect getClip(Size size) {
+    if (amount >= 0.999) return Offset.zero & size;
+    return Rect.fromLTWH(0, 0, size.width, size.height * amount);
+  }
+
+  @override
+  bool shouldReclip(covariant _PrintRevealClipper old) => old.amount != amount;
+}
+
+class _PrinterSlot extends StatelessWidget {
+  final SoraPalette p;
+  final double width;
+  const _PrinterSlot({required this.p, required this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width + 12,
+      height: 13,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(7),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF242C37), Color(0xFF0A0D12)],
+        ),
+        border: Border.all(color: p.hairline),
+        boxShadow: p.matte
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.42),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+      ),
+      child: Center(
+        child: Container(
+          width: width * 0.72,
+          height: 2,
+          decoration: BoxDecoration(
+            color: p.accent.withValues(alpha: 0.34),
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PaidStamp extends StatelessWidget {
+  final SoraPalette p;
+  const _PaidStamp({required this.p});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = p.success;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        border: Border.all(color: c.withValues(alpha: 0.82), width: 2.2),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border.all(color: c.withValues(alpha: 0.50)),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Text(
+          'PAID',
+          style: TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2.6,
+            height: 1.1,
+            color: c.withValues(alpha: 0.92),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A very light fibre pass. It only runs on the completion sheet, not on the
+/// live receipt that reflows inside the draggable pane.
+class _PaperFibrePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rnd = math.Random(4177);
+    final line = Paint()
+      ..strokeWidth = 0.5
+      ..color = const Color(0xFF6B6F78).withValues(alpha: 0.045);
+    for (var i = 0; i < 56; i++) {
+      final x = rnd.nextDouble() * size.width;
+      final y = rnd.nextDouble() * size.height;
+      final length = 2 + rnd.nextDouble() * 7;
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x + length, y + (rnd.nextDouble() - 0.5) * 2),
+        line,
+      );
+    }
+    final fleck = Paint()
+      ..color = const Color(0xFF6B6F78).withValues(alpha: 0.035);
+    for (var i = 0; i < 40; i++) {
+      canvas.drawCircle(
+        Offset(rnd.nextDouble() * size.width, rnd.nextDouble() * size.height),
+        0.45,
+        fleck,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PaperFibrePainter old) => false;
 }
 
 class _TornEdgePainter extends CustomPainter {
