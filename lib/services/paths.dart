@@ -1,7 +1,7 @@
 import 'dart:io';
 
 const String kAppName = 'Sora PoS';
-const String kAppVersion = '0.2.0';
+const String kAppVersion = '0.3.0';
 
 String joinPath(String a, String b) {
   if (a.endsWith(Platform.pathSeparator) || a.endsWith('/')) return '$a$b';

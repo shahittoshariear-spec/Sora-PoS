@@ -7,7 +7,7 @@ Lyra PoS, but rebuilds the interface, motion and drag handling from scratch. No
 account, no cloud and no internet connection is required to sell.
 
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](#requirements)
-[![Version](https://img.shields.io/badge/version-0.2.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.2)
+[![Version](https://img.shields.io/badge/version-0.3.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.3)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.7-02569B)](https://flutter.dev)
 [![Rust](https://img.shields.io/badge/Rust-stable-000000)](https://www.rust-lang.org)
 
@@ -85,6 +85,7 @@ account, no cloud and no internet connection is required to sell.
 - Automatic daily, weekly and monthly backups (newest 12 kept)
 - Export and import backups
 - Mandatory safety backup before a reset
+- First-run import from Lyra PoS, including products, categories, sales and staff
 
 ---
 
@@ -144,13 +145,13 @@ network share.
 
 ## Download and install
 
-The current release is **v0.2.0**:
+The current release is **v0.3.0**:
 
-<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.2>
+<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.3>
 
 ### Installer
 
-1. Download `SoraPos-setup-0.2.0.exe`.
+1. Download `SoraPos-setup-0.3.0.exe`.
 2. Run it. The installer is per-user and does not need an administrator prompt.
 3. Launch **Sora PoS** from the Start menu.
 
@@ -180,11 +181,40 @@ sales. The demo build seeds a shop only when the data folder is empty.
 
 ---
 
+## Migrating from Lyra PoS
+
+On a fresh Sora install, the welcome screen looks for:
+
+```
+%APPDATA%\Lyra PoS\lyra-pos-data.json
+```
+
+If that file exists, it offers **Import this shop**. The import brings across:
+
+- Products, SKUs, prices, costs and stock
+- Categories
+- Sales and refunds
+- Held sales
+- Shop details, printer, email and backup settings
+- Theme, fonts, text size, navigation and keyboard shortcuts
+- Staff names and roles
+
+A few things work differently:
+
+- **Passwords are not carried over.** Lyra stores unsalted hashes; Sora uses a
+  salted hash. You choose a new owner password during the import, then set the
+  other people's passwords in **Setup → Staff & access**.
+- **Supplier names are not carried into Sora's product fields.**
+- **The Lyra file is never modified.** Sora writes its own data file.
+
+---
+
 ## Using Sora PoS
 
 ### First run
 
-1. Open the app and create your shop.
+1. Open the app. If Sora finds a Lyra PoS shop, choose **Import this shop**.
+   Otherwise, create a new shop with the form on the welcome screen.
 2. Enter your name and a password. This first person becomes the owner.
 3. Go to **Setup → Shop** to set the shop name, address, phone, currency, tax
    rate and low-stock level.
@@ -300,7 +330,7 @@ With Inno Setup 6 installed:
 powershell -ExecutionPolicy Bypass -File tools/build-installer.ps1
 ```
 
-The installer is written to `release/SoraPos-setup-0.2.0.exe`.
+The installer is written to `release/SoraPos-setup-0.3.0.exe`.
 
 Sora PoS does not use Flutter plugins, so Windows Developer Mode is not
 required. The Rust helper must be copied to `assets/bin/` before building the
@@ -339,6 +369,11 @@ sections they can open and which actions need approval.
 **Can I use a touchscreen?**
 A touchscreen works as a pointer, but Sora PoS is designed for a mouse and
 keyboard first. There is no separate touch layout.
+
+**Can I import my Lyra PoS shop?**
+Yes. On a fresh Sora install, if `%APPDATA%\Lyra PoS\lyra-pos-data.json` exists,
+the welcome screen offers to import it. Staff passwords must be reset because
+the two apps hash passwords differently.
 
 **Can I move my data to another PC?**
 Yes. Close the app, copy `%APPDATA%\Sora PoS` to the same location on the new
@@ -380,9 +415,16 @@ cargo test --manifest-path rust_core/Cargo.toml
 
 ## Version
 
-**0.2.0** — account switching and the public v0.2 build.
+**0.3.0** — Lyra PoS import and staff password reset flow.
 
 ## Changelog
+
+### 0.3.0 — 24 Oct 2026
+
+- First-run import from Lyra PoS.
+- Products, categories, sales, refunds, holds, settings and staff are carried over.
+- The owner sets a new password during import; other staff are reset in Setup.
+- Lyra passwords are never reused, and the Lyra data file is left untouched.
 
 ### 0.2.0 — 22 Oct 2026
 
