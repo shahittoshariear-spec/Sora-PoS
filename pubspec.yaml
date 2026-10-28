@@ -1,7 +1,7 @@
 name: sora_pos
 description: "Sora PoS - a calm, offline point of sale with an aurora glass interface."
 publish_to: 'none'
-version: 0.4.0+4
+version: 0.4.1+5
 
 environment:
   sdk: ^3.13.5

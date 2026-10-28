@@ -7,7 +7,7 @@ Lyra PoS, but rebuilds the interface, motion and drag handling from scratch. No
 account, no cloud and no internet connection is required to sell.
 
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](#requirements)
-[![Version](https://img.shields.io/badge/version-0.4.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4)
+[![Version](https://img.shields.io/badge/version-0.4.1-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4.1)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.7-02569B)](https://flutter.dev)
 [![Rust](https://img.shields.io/badge/Rust-stable-000000)](https://www.rust-lang.org)
 
@@ -158,13 +158,13 @@ network share.
 
 ## Download and install
 
-The current release is **v0.4.0**:
+The current release is **v0.4.1**:
 
-<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4>
+<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4.1>
 
 ### Installer
 
-1. Download `SoraPos-setup-0.4.0.exe`.
+1. Download `SoraPos-setup-0.4.1.exe`.
 2. Run it. The installer is per-user and does not need an administrator prompt.
 3. Launch **Sora PoS** from the Start menu.
 
@@ -346,7 +346,7 @@ With Inno Setup 6 installed:
 powershell -ExecutionPolicy Bypass -File tools/build-installer.ps1
 ```
 
-The installer is written to `release/SoraPos-setup-0.4.0.exe`.
+The installer is written to `release/SoraPos-setup-0.4.1.exe`.
 
 Sora PoS does not use Flutter plugins, so Windows Developer Mode is not
 required. The Rust helper must be copied to `assets/bin/` before building the
@@ -431,10 +431,18 @@ cargo test --manifest-path rust_core/Cargo.toml
 
 ## Version
 
-**0.4.0** — generated product tiles, a receipt sale ritual, a richer still
-field and a goldfish constellation boot.
+**0.4.1** — automatic low-memory rendering and window fitting for shop PCs.
 
 ## Changelog
+
+### 0.4.1 — 29 Oct 2026
+
+- Large and high-DPI windows switch to a low-memory rendering path automatically.
+- The window now fits the monitor work area instead of starting off-screen.
+- Lite mode drops shadows, caustic light, hover tilt and the grid wave, and keeps
+  only the Till page cached.
+- Memory on a 2400 × 1500 surface fell from about 2 GB peak to under 400 MB;
+  a 3000 × 1800 surface fell from several gigabytes to under 250 MB.
 
 ### 0.4.0 — 24 Oct 2026
 

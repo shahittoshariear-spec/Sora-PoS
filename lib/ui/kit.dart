@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'perf.dart';
 import 'theme.dart';
 
 /// A tiny global gate for decorative motion. A screen holds it while the user
@@ -54,7 +55,11 @@ class AuroraBackground extends StatelessWidget {
       children: [
         // The background lives in its own layer so a palette change never
         // touches the app above it.
-        RepaintBoundary(child: CustomPaint(painter: _AuroraPainter(palette))),
+        RepaintBoundary(
+          child: CustomPaint(
+            painter: _AuroraPainter(palette, lite: SoraPerf.lite),
+          ),
+        ),
         child,
       ],
     );
@@ -63,8 +68,9 @@ class AuroraBackground extends StatelessWidget {
 
 class _AuroraPainter extends CustomPainter {
   final SoraPalette p;
+  final bool lite;
 
-  _AuroraPainter(this.p);
+  _AuroraPainter(this.p, {this.lite = false});
 
   static final List<Offset> _grainFine = _makeGrain(1300, 23);
   static final List<Offset> _grainCoarse = _makeGrain(460, 91);
@@ -143,6 +149,36 @@ class _AuroraPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final span = math.max(w, h);
+
+    if (lite) {
+      // Lite: one wash, grain and a vignette. No caustic bands, blobs or star
+      // field, so a large high-DPI surface does not multiply the paint cost.
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(w * 0.12, 0),
+            Offset(w * 0.88, h),
+            [
+              p.accent.withValues(alpha: p.isLight ? 0.018 : 0.034),
+              Colors.transparent,
+            ],
+          ),
+      );
+      _grain(canvas, size);
+      final vignette = Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(w * 0.5, h * 0.46),
+          span * 0.82,
+          [
+            Colors.transparent,
+            Colors.black.withValues(alpha: p.isLight ? 0.08 : 0.52),
+          ],
+          [0.48, 1],
+        );
+      canvas.drawRect(rect, vignette);
+      return;
+    }
 
     if (p.matte) {
       // Matte Flat: no stars, blobs or light bands. One barely-there tonal wash,
@@ -258,6 +294,7 @@ class _AuroraPainter extends CustomPainter {
   bool shouldRepaint(covariant _AuroraPainter old) =>
       old.p.id != p.id ||
       old.p.matte != p.matte ||
+      old.lite != lite ||
       old.p.accent != p.accent ||
       old.p.night != p.night;
 }
@@ -294,6 +331,7 @@ class _SoraSignatureState extends State<SoraSignature> {
   void _syncMotion() {
     if (!mounted) return;
     final shouldRun =
+        !SoraPerf.lite &&
         !_reduced &&
         Platform.environment['SORA_STILL'] != '1' &&
         !SoraMotion.paused.value;
@@ -417,6 +455,7 @@ class _GlassPanelState extends State<GlassPanel> {
     final p = context.palette;
     final radius = BorderRadius.circular(widget.radius);
     final matte = p.matte;
+    final lite = SoraPerf.lite;
     final border = widget.selected
         ? p.accent.withValues(alpha: 0.55)
         : widget.borderColor ??
@@ -466,7 +505,9 @@ class _GlassPanelState extends State<GlassPanel> {
                     stops: p.isLight ? null : const [0, 0.58, 1],
                   )),
         border: Border.all(color: border, width: 1),
-        boxShadow: matte
+        boxShadow: lite
+            ? null
+            : matte
             ? (matteHover
                   ? [
                       BoxShadow(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../ui/kit.dart';
+import '../ui/perf.dart';
 import '../ui/theme.dart';
 
 /// The short build-to-logo sequence shown once after a sign-in.
@@ -120,6 +121,7 @@ class _BrandBootScreenState extends State<BrandBootScreen>
                                 painter: _ConstellationPainter(
                                   palette: p,
                                   time: reduced ? 1.0 : _c.value,
+                                  lite: SoraPerf.lite,
                                 ),
                               ),
                             ),
@@ -422,8 +424,13 @@ class _StarFrame {
 class _ConstellationPainter extends CustomPainter {
   final SoraPalette palette;
   final double time;
+  final bool lite;
 
-  _ConstellationPainter({required this.palette, required this.time});
+  _ConstellationPainter({
+    required this.palette,
+    required this.time,
+    this.lite = false,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -520,13 +527,15 @@ class _ConstellationPainter extends CustomPainter {
     }
 
     // Halo first, so the cores sit in a single light pass above them.
-    final halo = Paint();
-    for (final star in stars) {
-      if (star == null) continue;
-      halo.color = p.accent.withValues(
-        alpha: (p.matte ? 0.055 : 0.095) * star.opacity,
-      );
-      canvas.drawCircle(star.position, star.radius * 2.7, halo);
+    if (!lite) {
+      final halo = Paint();
+      for (final star in stars) {
+        if (star == null) continue;
+        halo.color = p.accent.withValues(
+          alpha: (p.matte ? 0.055 : 0.095) * star.opacity,
+        );
+        canvas.drawCircle(star.position, star.radius * 2.7, halo);
+      }
     }
     for (final star in stars) {
       if (star == null) continue;
@@ -538,7 +547,7 @@ class _ConstellationPainter extends CustomPainter {
     }
 
     // Fine joins between neighbouring letter stars, once they have landed.
-    final joinAlpha = _span(t, 0.74, 0.92) * 0.13;
+    final joinAlpha = lite ? 0.0 : _span(t, 0.74, 0.92) * 0.13;
     if (joinAlpha > 0) {
       final join = Paint()
         ..style = PaintingStyle.stroke
@@ -557,6 +566,7 @@ class _ConstellationPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ConstellationPainter old) =>
       old.time != time ||
+      old.lite != lite ||
       old.palette.id != palette.id ||
       old.palette.accent != palette.accent ||
       old.palette.text != palette.text ||

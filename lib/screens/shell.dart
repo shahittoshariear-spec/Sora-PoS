@@ -10,6 +10,7 @@ import '../format.dart';
 import '../models.dart';
 import '../store.dart';
 import '../ui/kit.dart';
+import '../ui/perf.dart';
 import '../ui/theme.dart';
 import '../widgets/authorize.dart';
 import '../widgets/switch_account.dart';
@@ -405,7 +406,11 @@ class _AppShellState extends State<AppShell>
                         offstage: id != _section,
                         child: TickerMode(
                           enabled: id == _section,
-                          child: _visited.contains(id) || id == _section
+                          child:
+                              (id == _section ||
+                                  (SoraPerf.lite
+                                      ? id == 'till'
+                                      : _visited.contains(id)))
                               ? _cachedPage(id)
                               : const SizedBox.shrink(),
                         ),
@@ -422,6 +427,13 @@ class _AppShellState extends State<AppShell>
 
   Widget _cachedPage(String section) {
     _visited.add(section);
+    if (SoraPerf.lite) {
+      // Keep the Till warm; rebuild every other section on arrival and let its
+      // state go when the person leaves. The heavy pages are the ones that
+      // matter on an 8 GB counter PC.
+      _pages.removeWhere((key, _) => key != 'till');
+      if (section != 'till') return _pageFor(section);
+    }
     final cached = _pages[section];
     if (cached != null && _pageEpochs[section] == _epoch) return cached;
     final page = _pageFor(section);

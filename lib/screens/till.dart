@@ -16,6 +16,7 @@ import '../services/native.dart';
 import '../services/receipts.dart';
 import '../store.dart';
 import '../ui/kit.dart';
+import '../ui/perf.dart';
 import '../ui/product_visual.dart';
 import '../ui/theme.dart';
 import '../widgets/authorize.dart';
@@ -691,6 +692,15 @@ class TillScreenState extends State<TillScreen> {
                     itemCount: products.length,
                     itemBuilder: (context, index) {
                       final product = products[index];
+                      final card = _ProductCard(
+                        product: product,
+                        category: store.categoryName(product.categoryId),
+                        currency: store.currency,
+                        lowStock: product.stock <= store.data.shop.lowStock,
+                        onTap: () => _add(product),
+                        onDetails: () => _showProduct(product),
+                      );
+                      if (SoraPerf.lite) return card;
                       return TweenAnimationBuilder<double>(
                         key: ValueKey('${product.id}-$_searchVersion'),
                         tween: Tween(begin: 0, end: 1),
@@ -705,14 +715,7 @@ class TillScreenState extends State<TillScreen> {
                             child: child,
                           ),
                         ),
-                        child: _ProductCard(
-                          product: product,
-                          category: store.categoryName(product.categoryId),
-                          currency: store.currency,
-                          lowStock: product.stock <= store.data.shop.lowStock,
-                          onTap: () => _add(product),
-                          onDetails: () => _showProduct(product),
-                        ),
+                        child: card,
                       );
                     },
                   ),
@@ -1739,13 +1742,18 @@ class _ProductCardState extends State<_ProductCard>
 
   void _enter(PointerEnterEvent event) {
     if (!_hovering) setState(() => _hovering = true);
+    if (SoraPerf.lite) return;
     _hoverC.forward();
     _track(event.localPosition);
   }
 
-  void _trackPosition(PointerHoverEvent event) => _track(event.localPosition);
+  void _trackPosition(PointerHoverEvent event) {
+    if (SoraPerf.lite) return;
+    _track(event.localPosition);
+  }
 
   void _track(Offset local) {
+    if (SoraPerf.lite) return;
     final size = context.size;
     if (size == null || size.isEmpty) return;
     _spec.value = Offset(
@@ -1756,6 +1764,7 @@ class _ProductCardState extends State<_ProductCard>
 
   void _exit(PointerExitEvent event) {
     if (_hovering) setState(() => _hovering = false);
+    if (SoraPerf.lite) return;
     _hoverC.reverse();
     _spec.value = const Offset(0.5, 0.36);
   }
@@ -1764,6 +1773,7 @@ class _ProductCardState extends State<_ProductCard>
   Widget build(BuildContext context) {
     final p = context.palette;
     final reduced = MediaQuery.disableAnimationsOf(context);
+    final lite = SoraPerf.lite;
     final out = widget.product.stock <= 0;
 
     Widget mark = ProductMark(
@@ -1861,7 +1871,7 @@ class _ProductCardState extends State<_ProductCard>
         child: AnimatedBuilder(
           animation: _motion,
           builder: (context, child) {
-            final t = reduced ? 0.0 : _hoverC.value;
+            final t = (reduced || lite) ? 0.0 : _hoverC.value;
             final spec = _spec.value;
             final dx = spec.dx * 2 - 1;
             final dy = spec.dy * 2 - 1;
@@ -1874,109 +1884,108 @@ class _ProductCardState extends State<_ProductCard>
               transform.multiply(Matrix4.diagonal3Values(lift, lift, 1));
             }
 
+            final body = Stack(
+              fit: StackFit.expand,
+              children: [
+                AnimatedContainer(
+                  duration: reduced || lite
+                      ? Duration.zero
+                      : const Duration(milliseconds: 170),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(17),
+                    color: _hovering
+                        ? p.accent.withValues(alpha: p.matte ? 0.10 : 0.08)
+                        : p.glassTint,
+                    gradient: p.matte
+                        ? null
+                        : LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: _hovering
+                                ? [
+                                    p.accent.withValues(alpha: 0.15),
+                                    p.accent.withValues(alpha: 0.040),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.055),
+                                    Colors.white.withValues(alpha: 0.014),
+                                  ],
+                          ),
+                    border: Border.all(
+                      color: _hovering
+                          ? p.accent.withValues(alpha: p.matte ? 0.48 : 0.34)
+                          : p.hairline,
+                      width: _hovering ? 1.2 : 1,
+                    ),
+                    boxShadow: !lite && _hovering && !p.matte
+                        ? [
+                            BoxShadow(
+                              color: p.accent.withValues(alpha: 0.14),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: child,
+                ),
+                if (!lite && !p.matte && t > 0.001)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _CardRimPainter(
+                          palette: p,
+                          spec: spec,
+                          strength: t,
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  top: 9,
+                  right: 9,
+                  child: IgnorePointer(
+                    child: AnimatedOpacity(
+                      opacity: _hovering && !out ? 1 : 0,
+                      duration: reduced || lite
+                          ? Duration.zero
+                          : const Duration(milliseconds: 150),
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: p.accent,
+                          shape: BoxShape.circle,
+                          boxShadow: p.matte || lite
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: p.accent.withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                  ),
+                                ],
+                        ),
+                        child: Icon(
+                          Icons.add_rounded,
+                          size: 14,
+                          color: p.accent.computeLuminance() > 0.47
+                              ? const Color(0xFF08120F)
+                              : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+
+            if (lite) return body;
             return Transform(
               alignment: Alignment.center,
               transform: transform,
-              child: RepaintBoundary(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    AnimatedContainer(
-                      duration: reduced
-                          ? Duration.zero
-                          : const Duration(milliseconds: 170),
-                      curve: Curves.easeOut,
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(17),
-                        color: _hovering
-                            ? p.accent.withValues(alpha: p.matte ? 0.10 : 0.08)
-                            : p.glassTint,
-                        gradient: p.matte
-                            ? null
-                            : LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: _hovering
-                                    ? [
-                                        p.accent.withValues(alpha: 0.15),
-                                        p.accent.withValues(alpha: 0.040),
-                                      ]
-                                    : [
-                                        Colors.white.withValues(alpha: 0.055),
-                                        Colors.white.withValues(alpha: 0.014),
-                                      ],
-                              ),
-                        border: Border.all(
-                          color: _hovering
-                              ? p.accent.withValues(
-                                  alpha: p.matte ? 0.48 : 0.34,
-                                )
-                              : p.hairline,
-                          width: _hovering ? 1.2 : 1,
-                        ),
-                        boxShadow: _hovering && !p.matte
-                            ? [
-                                BoxShadow(
-                                  color: p.accent.withValues(alpha: 0.14),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: child,
-                    ),
-                    if (!p.matte && t > 0.001)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: CustomPaint(
-                            painter: _CardRimPainter(
-                              palette: p,
-                              spec: spec,
-                              strength: t,
-                            ),
-                          ),
-                        ),
-                      ),
-                    Positioned(
-                      top: 9,
-                      right: 9,
-                      child: IgnorePointer(
-                        child: AnimatedOpacity(
-                          opacity: _hovering && !out ? 1 : 0,
-                          duration: reduced
-                              ? Duration.zero
-                              : const Duration(milliseconds: 150),
-                          child: Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              color: p.accent,
-                              shape: BoxShape.circle,
-                              boxShadow: p.matte
-                                  ? null
-                                  : [
-                                      BoxShadow(
-                                        color: p.accent.withValues(alpha: 0.35),
-                                        blurRadius: 12,
-                                      ),
-                                    ],
-                            ),
-                            child: Icon(
-                              Icons.add_rounded,
-                              size: 14,
-                              color: p.accent.computeLuminance() > 0.47
-                                  ? const Color(0xFF08120F)
-                                  : Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: RepaintBoundary(child: body),
             );
           },
           child: content,

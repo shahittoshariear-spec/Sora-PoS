@@ -16,11 +16,13 @@ import 'services/email.dart';
 import 'services/native.dart';
 import 'services/paths.dart';
 import 'store.dart';
+import 'ui/perf.dart';
 import 'ui/theme.dart';
 import 'ui/theme_switcher.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SoraPerf.lite = _autoLite();
   if (Platform.environment['SORA_TIMINGS'] == '1') _logSlowFrames();
   if (Platform.environment['SORA_MEMLOG'] == '1') _logMemory();
   FlutterError.onError = (details) {
@@ -44,6 +46,18 @@ Future<void> main() async {
     return;
   }
   runApp(SoraApp(store: store));
+}
+
+/// Turns on the low-memory path before the first frame on a large physical
+/// surface. 2.0 megapixels is roughly a maximised 1080p window or a scaled
+/// high-DPI window; below that the full glass look is cheap enough.
+bool _autoLite() {
+  if (const bool.fromEnvironment('SORA_PERF')) return true;
+  if (const bool.fromEnvironment('SORA_PERF_FULL')) return false;
+  final views = ui.PlatformDispatcher.instance.views;
+  if (views.isEmpty) return false;
+  final size = views.first.physicalSize;
+  return size.width * size.height > 2000000;
 }
 
 void _logSlowFrames() {
@@ -113,7 +127,8 @@ class SoraApp extends StatefulWidget {
   State<SoraApp> createState() => _SoraAppState();
 }
 
-class _SoraAppState extends State<SoraApp> with SingleTickerProviderStateMixin {
+class _SoraAppState extends State<SoraApp>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final CartController _cart = CartController();
   final GlobalKey _captureKey = GlobalKey();
   late final AnimationController _spreadController;
@@ -128,6 +143,7 @@ class _SoraAppState extends State<SoraApp> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _spreadController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 680),
@@ -141,12 +157,21 @@ class _SoraAppState extends State<SoraApp> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ThemeSwitcher.instance.register(null);
     store.removeListener(_applyWindowChrome);
     _mailTimer?.cancel();
     _spreadController.dispose();
     _spreadImage?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    final next = _autoLite();
+    if (next != SoraPerf.lite && mounted) {
+      setState(() => SoraPerf.lite = next);
+    }
   }
 
   Future<void> _tick() async {
@@ -195,7 +220,7 @@ class _SoraAppState extends State<SoraApp> with SingleTickerProviderStateMixin {
     final reduced = captureContext == null
         ? false
         : (MediaQuery.maybeOf(captureContext)?.disableAnimations ?? false);
-    if (image == null || reduced || boundary is! RenderBox) {
+    if (image == null || reduced || SoraPerf.lite || boundary is! RenderBox) {
       image?.dispose();
       store.data.appearance.themeId = themeId;
       store.changed();
@@ -252,10 +277,12 @@ class _SoraAppState extends State<SoraApp> with SingleTickerProviderStateMixin {
                 image: _spreadImage,
                 origin: _spreadOrigin,
                 palette: palette,
-                child: RepaintBoundary(
-                  key: _captureKey,
-                  child: child ?? const SizedBox.shrink(),
-                ),
+                child: SoraPerf.lite
+                    ? (child ?? const SizedBox.shrink())
+                    : RepaintBoundary(
+                        key: _captureKey,
+                        child: child ?? const SizedBox.shrink(),
+                      ),
               ),
             );
           },
@@ -342,6 +369,9 @@ class _SplashGateState extends State<_SplashGate> {
       child = BrandBootScreen(
         key: ValueKey('boot-${staff.id}'),
         palette: widget.palette,
+        duration: SoraPerf.lite
+            ? const Duration(milliseconds: 1200)
+            : const Duration(milliseconds: 1750),
         onDone: () => _finishBoot(staff.id),
       );
     } else {
