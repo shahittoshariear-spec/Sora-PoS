@@ -10,6 +10,7 @@ import '../services/paths.dart';
 import '../services/receipts.dart';
 import '../store.dart';
 import '../ui/kit.dart';
+import '../ui/perf.dart';
 import '../ui/theme.dart';
 import '../ui/theme_switcher.dart';
 
@@ -1765,7 +1766,7 @@ class _AppearancePaneState extends State<_AppearancePane> {
     final p = context.palette;
     return _Pane(
       title: 'Appearance',
-      subtitle: 'Nine marks, three of your own, nine typefaces, four sizes and two surface styles. Everything applies as it is picked.',
+      subtitle: 'Twelve marks, three of your own, nine typefaces, four sizes and two surface styles. Everything applies as it is picked.',
       children: [
         SectionLabel('THEME'),
         const SizedBox(height: 10),
@@ -1903,6 +1904,26 @@ class _AppearancePaneState extends State<_AppearancePane> {
           appearance.surfaceStyle == 'matte'
               ? 'Opaque near-black panels, flat colour and no glow. The calm option for a bright room or a busy screen.'
               : 'Tinted glass over a still, soft aurora. The default Sora look.',
+          style: TextStyle(fontSize: 10.5, color: p.faint),
+        ),
+        const SizedBox(height: 24),
+        SectionLabel('PERFORMANCE'),
+        const SizedBox(height: 9),
+        SwitchRow(
+          title: 'Reduce effects',
+          subtitle: 'Turns off panel shadows, caustic light, hover tilt and the S.S sweep, and keeps only the Till cached. Recommended on 8 GB PCs.',
+          value: appearance.reduceEffects,
+          onChanged: (v) {
+            appearance.reduceEffects = v;
+            store.changed();
+            setState(() {});
+          },
+        ),
+        const SizedBox(height: 7),
+        Text(
+          SoraPerf.lite
+              ? 'The low-memory look is active${appearance.reduceEffects ? ' because you turned it on' : ' for this screen size'}.'
+              : 'The full glass look is active.',
           style: TextStyle(fontSize: 10.5, color: p.faint),
         ),
         const SizedBox(height: 24),

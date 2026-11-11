@@ -899,14 +899,28 @@ class TillScreenState extends State<TillScreen> {
                 ),
               ),
               const Spacer(),
-              Text(
-                store.fmt(totals.total),
-                style: TextStyle(
-                  fontSize: 29,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -1,
-                  color: p.text,
-                  height: 1,
+              TweenAnimationBuilder<double>(
+                key: ValueKey(totals.total),
+                tween: Tween(begin: 1.06, end: 1.0),
+                duration:
+                    MediaQuery.disableAnimationsOf(context) || SoraPerf.lite
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                builder: (context, scale, child) => Transform.scale(
+                  scale: scale,
+                  alignment: Alignment.centerRight,
+                  child: child,
+                ),
+                child: Text(
+                  store.fmt(totals.total),
+                  style: TextStyle(
+                    fontSize: 29,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -1,
+                    color: p.text,
+                    height: 1,
+                  ),
                 ),
               ),
             ],

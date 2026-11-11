@@ -7,7 +7,7 @@ Lyra PoS, but rebuilds the interface, motion and drag handling from scratch. No
 account, no cloud and no internet connection is required to sell.
 
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](#requirements)
-[![Version](https://img.shields.io/badge/version-0.4.1-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4.1)
+[![Version](https://img.shields.io/badge/version-0.5.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.5.0)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.7-02569B)](https://flutter.dev)
 [![Rust](https://img.shields.io/badge/Rust-stable-000000)](https://www.rust-lang.org)
 
@@ -78,10 +78,12 @@ account, no cloud and no internet connection is required to sell.
 
 ### Appearance
 
-- Nine built-in themes and three custom theme slots
+- Twelve built-in themes and three custom theme slots
 - Nine bundled typefaces and four text sizes
 - Sidebar, top navigation or a floating command dock
 - **Glass Blur** and **Matte Flat** surface styles
+- A **Reduce effects** switch in Appearance for 8 GB PCs; large screens switch
+  to the low-memory look automatically
 - A still **Sora Field** background with fine grain, caustic light and depth
   that never drifts, breathes or follows the pointer
 - Theme changes wipe across the screen with a slow, warped edge
@@ -111,7 +113,7 @@ knows, but changes the parts that caused friction.
 | --- | --- |
 | Background | A fixed painted field with fine grain and caustic light. It does not drift, breathe or follow the pointer, so it cannot flicker and costs nothing at rest. |
 | Performance | No live backdrop blur. The till divider uses a painted guide and commits the layout once on release, avoiding the per-frame raster work that could make dragging fall behind the cursor. |
-| Visuals | Generated product marks, a hover tilt and rim light, a larger product card, a receipt-printer sale ritual, Glass Blur or Matte Flat, nine themes, three custom slots, nine typefaces, four text sizes and three navigation layouts. |
+| Visuals | Generated product marks, a hover tilt and rim light, a larger product card, a receipt-printer sale ritual, Glass Blur or Matte Flat, twelve themes, three custom slots, nine typefaces, four text sizes and three navigation layouts. |
 | Accounts | Owner, manager and cashier roles are enforced in navigation and on sensitive actions. |
 | Oversight | A silent audit journal plus a red watch-list block in the daily email report. Staff never see a warning. |
 | Deployment | A per-user installer that needs no administrator prompt, or a portable folder you can copy. |
@@ -158,13 +160,13 @@ network share.
 
 ## Download and install
 
-The current release is **v0.4.1**:
+The current release is **v0.5.0**:
 
-<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.4.1>
+<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.5.0>
 
 ### Installer
 
-1. Download `SoraPos-setup-0.4.1.exe`.
+1. Download `SoraPos-setup-0.5.0.exe`.
 2. Run it. The installer is per-user and does not need an administrator prompt.
 3. Launch **Sora PoS** from the Start menu.
 
@@ -346,7 +348,7 @@ With Inno Setup 6 installed:
 powershell -ExecutionPolicy Bypass -File tools/build-installer.ps1
 ```
 
-The installer is written to `release/SoraPos-setup-0.4.1.exe`.
+The installer is written to `release/SoraPos-setup-0.5.0.exe`.
 
 Sora PoS does not use Flutter plugins, so Windows Developer Mode is not
 required. The Rust helper must be copied to `assets/bin/` before building the
@@ -431,9 +433,20 @@ cargo test --manifest-path rust_core/Cargo.toml
 
 ## Version
 
-**0.4.1** — automatic low-memory rendering and window fitting for shop PCs.
+**0.5.0** — three new themes, a manual reduce-effects switch and a faster,
+quieter interface.
 
 ## Changelog
+
+### 0.5.0 — 29 Oct 2026
+
+- Three new themes: Deep Ocean, Sakura and Copper.
+- Appearance has a **Reduce effects** switch; the automatic low-memory path is
+  still used on large screens.
+- The S.S mark now sweeps only while hovered, so it costs no idle CPU.
+- The splash and sign-in sequence are shorter.
+- Page changes settle with a small lift, and the till total gives a brief pulse
+  when it changes.
 
 ### 0.4.1 — 29 Oct 2026
 

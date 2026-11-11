@@ -603,6 +603,10 @@ class Appearance {
   /// `glass` is the layered aurora-glass look. `matte` keeps the same layout
   /// but paints opaque, near-black surfaces with no blur or colour reflection.
   String surfaceStyle;
+
+  /// Turns off the expensive decorative layers on this PC, independent of the
+  /// automatic large-surface check. Stored per shop.
+  bool reduceEffects;
   List<CustomTheme> customs;
 
   Appearance({
@@ -612,6 +616,7 @@ class Appearance {
     this.navPosition = 'side',
     this.dockNav = false,
     this.surfaceStyle = 'glass',
+    this.reduceEffects = false,
     List<CustomTheme>? customs,
   }) : customs =
            customs ??
@@ -640,6 +645,7 @@ class Appearance {
     'navPosition': navPosition,
     'dockNav': dockNav,
     'surfaceStyle': surfaceStyle,
+    'reduceEffects': reduceEffects,
     'customs': customs.map((c) => c.toJson()).toList(),
   };
 
@@ -654,6 +660,7 @@ class Appearance {
       navPosition: asString(j['navPosition']) == 'top' ? 'top' : 'side',
       dockNav: j['dockNav'] == true,
       surfaceStyle: asString(j['surfaceStyle']) == 'matte' ? 'matte' : 'glass',
+      reduceEffects: j['reduceEffects'] == true,
       customs: list.length == 3
           ? list
           : [...list, ...(Appearance().customs.skip(list.length))],

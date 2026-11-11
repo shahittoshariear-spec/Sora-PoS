@@ -22,7 +22,6 @@ import 'ui/theme_switcher.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SoraPerf.lite = _autoLite();
   if (Platform.environment['SORA_TIMINGS'] == '1') _logSlowFrames();
   if (Platform.environment['SORA_MEMLOG'] == '1') _logMemory();
   FlutterError.onError = (details) {
@@ -45,6 +44,7 @@ Future<void> main() async {
     runApp(_StartupError(error: '$e'));
     return;
   }
+  SoraPerf.lite = store.data.appearance.reduceEffects || _autoLite();
   runApp(SoraApp(store: store));
 }
 
@@ -168,7 +168,7 @@ class _SoraAppState extends State<SoraApp>
 
   @override
   void didChangeMetrics() {
-    final next = _autoLite();
+    final next = widget.store.data.appearance.reduceEffects || _autoLite();
     if (next != SoraPerf.lite && mounted) {
       setState(() => SoraPerf.lite = next);
     }
@@ -258,6 +258,8 @@ class _SoraAppState extends State<SoraApp>
       animation: store,
       builder: (context, _) {
         final appearance = store.data.appearance;
+        final lite = appearance.reduceEffects || _autoLite();
+        if (lite != SoraPerf.lite) SoraPerf.lite = lite;
         final palette = SoraPalette.fromAppearance(appearance);
         final theme = buildSoraTheme(palette, appearance.fontIndex);
         return MaterialApp(
@@ -318,7 +320,7 @@ class _SplashGateState extends State<_SplashGate> {
     super.initState();
     _lastStaffId = widget.store.current?.id;
     widget.store.addListener(_onStoreChanged);
-    _timer = Timer(const Duration(milliseconds: 1600), () {
+    _timer = Timer(const Duration(milliseconds: 1100), () {
       if (mounted) setState(() => _splash = false);
     });
   }
@@ -370,8 +372,8 @@ class _SplashGateState extends State<_SplashGate> {
         key: ValueKey('boot-${staff.id}'),
         palette: widget.palette,
         duration: SoraPerf.lite
-            ? const Duration(milliseconds: 1200)
-            : const Duration(milliseconds: 1750),
+            ? const Duration(milliseconds: 1000)
+            : const Duration(milliseconds: 1500),
         onDone: () => _finishBoot(staff.id),
       );
     } else {

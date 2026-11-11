@@ -397,26 +397,38 @@ class _AppShellState extends State<AppShell>
                 parent: _pageFade,
                 curve: Curves.easeOutCubic,
               ),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  for (final id in _sectionIds)
-                    Positioned.fill(
-                      child: Offstage(
-                        offstage: id != _section,
-                        child: TickerMode(
-                          enabled: id == _section,
-                          child:
-                              (id == _section ||
-                                  (SoraPerf.lite
-                                      ? id == 'till'
-                                      : _visited.contains(id)))
-                              ? _cachedPage(id)
-                              : const SizedBox.shrink(),
-                        ),
+              child: SlideTransition(
+                position:
+                    Tween<Offset>(
+                      begin: const Offset(0, 0.010),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: _pageFade,
+                        curve: Curves.easeOutCubic,
                       ),
                     ),
-                ],
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    for (final id in _sectionIds)
+                      Positioned.fill(
+                        child: Offstage(
+                          offstage: id != _section,
+                          child: TickerMode(
+                            enabled: id == _section,
+                            child:
+                                (id == _section ||
+                                    (SoraPerf.lite
+                                        ? id == 'till'
+                                        : _visited.contains(id)))
+                                ? _cachedPage(id)
+                                : const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -312,8 +312,9 @@ class SoraSignature extends StatefulWidget {
 
 class _SoraSignatureState extends State<SoraSignature> {
   Timer? _timer;
-  double _t = 0;
+  double _t = 0.28;
   bool _reduced = false;
+  bool _hovering = false;
 
   @override
   void initState() {
@@ -331,6 +332,7 @@ class _SoraSignatureState extends State<SoraSignature> {
   void _syncMotion() {
     if (!mounted) return;
     final shouldRun =
+        _hovering &&
         !SoraPerf.lite &&
         !_reduced &&
         Platform.environment['SORA_STILL'] != '1' &&
@@ -357,41 +359,51 @@ class _SoraSignatureState extends State<SoraSignature> {
     final p = widget.palette;
     final t = _reduced ? 0.3 : _t;
     final cosmic = Color.lerp(p.accent, const Color(0xFF7C6BFF), 0.5)!;
-    return RepaintBoundary(
-      child: Container(
-        height: widget.height,
-        padding: EdgeInsets.symmetric(horizontal: widget.height * 0.42),
-        decoration: BoxDecoration(
-          color: p.isLight
-              ? Colors.black.withValues(alpha: 0.045)
-              : Colors.white.withValues(alpha: 0.055),
-          borderRadius: BorderRadius.circular(widget.height / 2),
-          border: Border.all(color: p.hairline),
-        ),
-        child: Center(
-          widthFactor: 1,
-          child: ShaderMask(
-            blendMode: BlendMode.srcIn,
-            shaderCallback: (bounds) => LinearGradient(
-              begin: Alignment(-1.5 + 3 * t, -0.4),
-              end: Alignment(-0.5 + 3 * t, 0.4),
-              colors: [
-                p.accent.withValues(alpha: 0.55),
-                p.accent,
-                cosmic,
-                p.accent2,
-                p.accent.withValues(alpha: 0.55),
-              ],
-              stops: const [0, 0.3, 0.5, 0.72, 1],
-            ).createShader(bounds),
-            child: Text(
-              'S.S',
-              style: TextStyle(
-                fontSize: widget.height * 0.52,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.1,
-                height: 1.1,
-                color: Colors.white,
+    return MouseRegion(
+      onEnter: (_) {
+        _hovering = true;
+        _syncMotion();
+      },
+      onExit: (_) {
+        _hovering = false;
+        _syncMotion();
+      },
+      child: RepaintBoundary(
+        child: Container(
+          height: widget.height,
+          padding: EdgeInsets.symmetric(horizontal: widget.height * 0.42),
+          decoration: BoxDecoration(
+            color: p.isLight
+                ? Colors.black.withValues(alpha: 0.045)
+                : Colors.white.withValues(alpha: 0.055),
+            borderRadius: BorderRadius.circular(widget.height / 2),
+            border: Border.all(color: p.hairline),
+          ),
+          child: Center(
+            widthFactor: 1,
+            child: ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (bounds) => LinearGradient(
+                begin: Alignment(-1.5 + 3 * t, -0.4),
+                end: Alignment(-0.5 + 3 * t, 0.4),
+                colors: [
+                  p.accent.withValues(alpha: 0.55),
+                  p.accent,
+                  cosmic,
+                  p.accent2,
+                  p.accent.withValues(alpha: 0.55),
+                ],
+                stops: const [0, 0.3, 0.5, 0.72, 1],
+              ).createShader(bounds),
+              child: Text(
+                'S.S',
+                style: TextStyle(
+                  fontSize: widget.height * 0.52,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  height: 1.1,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
