@@ -149,6 +149,11 @@ class _AuroraPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final span = math.max(w, h);
+    final wash = switch (p.background) {
+      'nebula' => Color.lerp(p.accent, const Color(0xFFFF5FA2), 0.45)!,
+      'flutter' => const Color(0xFF54C5F8),
+      _ => p.accent,
+    };
 
     if (lite) {
       // Lite: one wash, grain and a vignette. No caustic bands, blobs or star
@@ -160,7 +165,7 @@ class _AuroraPainter extends CustomPainter {
             Offset(w * 0.12, 0),
             Offset(w * 0.88, h),
             [
-              p.accent.withValues(alpha: p.isLight ? 0.018 : 0.034),
+              wash.withValues(alpha: p.isLight ? 0.018 : 0.034),
               Colors.transparent,
             ],
           ),
@@ -191,7 +196,7 @@ class _AuroraPainter extends CustomPainter {
             Offset(w * 0.12, 0),
             Offset(w * 0.88, h),
             [
-              p.accent.withValues(alpha: p.isLight ? 0.018 : 0.030),
+              wash.withValues(alpha: p.isLight ? 0.018 : 0.030),
               Colors.transparent,
             ],
           ),
@@ -211,9 +216,157 @@ class _AuroraPainter extends CustomPainter {
       return;
     }
 
+    final cosmic = Color.lerp(p.accent, const Color(0xFF7C6BFF), 0.42)!;
+
+    void blob(Offset center, double radius, Color color, double alpha) {
+      final shader = ui.Gradient.radial(
+        center,
+        radius,
+        [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+        [0, 1],
+      );
+      canvas.drawCircle(center, radius, Paint()..shader = shader);
+    }
+
+    if (p.background == 'nebula') {
+      final magenta = Color.lerp(p.accent, const Color(0xFFFF4F9A), 0.55)!;
+      final violet = Color.lerp(p.accent, const Color(0xFF8B5CF6), 0.55)!;
+      final blue = Color.lerp(p.accent, const Color(0xFF38BDF8), 0.45)!;
+      blob(Offset(w * 0.28, h * 0.26), span * 0.60, magenta, 0.11);
+      blob(Offset(w * 0.74, h * 0.20), span * 0.52, blue, 0.09);
+      blob(Offset(w * 0.62, h * 0.80), span * 0.62, violet, 0.10);
+      blob(Offset(w * 0.14, h * 0.74), span * 0.46, magenta, 0.06);
+
+      canvas.save();
+      canvas.translate(w * 0.5, h * 0.5);
+      canvas.rotate(-0.35);
+      final dust = Rect.fromCenter(
+        center: Offset.zero,
+        width: span * 2.2,
+        height: span * 0.26,
+      );
+      canvas.drawRect(
+        dust,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(0, -span * 0.13),
+            Offset(0, span * 0.13),
+            [
+              Colors.transparent,
+              Colors.black.withValues(alpha: 0.20),
+              Colors.transparent,
+            ],
+            const [0, 0.5, 1],
+          ),
+      );
+      canvas.restore();
+
+      final starPaint = Paint();
+      final rnd = math.Random(17);
+      final ink = p.isLight ? Colors.black : Colors.white;
+      for (var i = 0; i < 90; i++) {
+        final x = rnd.nextDouble() * w;
+        final y = rnd.nextDouble() * h;
+        final bright = i % 11 == 0;
+        final starColor = bright && i % 22 == 0 ? p.accent2 : ink;
+        starPaint.color = starColor.withValues(
+          alpha: bright ? 0.22 : 0.04 + 0.10 * rnd.nextDouble(),
+        );
+        canvas.drawCircle(
+          Offset(x, y),
+          bright ? 1.7 : rnd.nextDouble() * 1.3 + 0.3,
+          starPaint,
+        );
+      }
+      _grain(canvas, size);
+      final vignette = Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(w * 0.5, h * 0.48),
+          span * 0.80,
+          [
+            Colors.transparent,
+            Colors.black.withValues(alpha: p.isLight ? 0.10 : 0.58),
+          ],
+          [0.52, 1],
+        );
+      canvas.drawRect(rect, vignette);
+      return;
+    }
+
+    if (p.background == 'flutter') {
+      const sky = Color(0xFF54C5F8);
+      const deep = Color(0xFF027DFD);
+      blob(Offset(w * 0.18, h * 0.16), span * 0.60, sky, 0.13);
+      blob(Offset(w * 0.84, h * 0.34), span * 0.52, deep, 0.10);
+      blob(Offset(w * 0.56, h * 0.90), span * 0.50, sky, 0.06);
+
+      // Two soft wing lights instead of hard diagonal bands. They echo the
+      // Flutter mark's sweep without putting a giant logo behind the till.
+      _caustic(
+        canvas,
+        Offset(w * 0.46, h * 0.44),
+        span * 0.48,
+        -0.62,
+        2.4,
+        sky,
+        0.060,
+      );
+      _caustic(
+        canvas,
+        Offset(w * 0.54, h * 0.58),
+        span * 0.40,
+        -0.62,
+        1.9,
+        deep,
+        0.045,
+      );
+
+      final mark = TextPainter(
+        text: TextSpan(
+          text: String.fromCharCode(Icons.flutter_dash.codePoint),
+          style: TextStyle(
+            fontFamily: 'MaterialIcons',
+            fontSize: span * 0.115,
+            color: sky.withValues(alpha: p.isLight ? 0.05 : 0.04),
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      mark.paint(canvas, Offset(w * 0.845, h * 0.76));
+
+      final starPaint = Paint();
+      final rnd = math.Random(29);
+      final ink = p.isLight ? Colors.black : Colors.white;
+      for (var i = 0; i < 70; i++) {
+        final x = rnd.nextDouble() * w;
+        final y = rnd.nextDouble() * h;
+        final bright = i % 13 == 0;
+        starPaint.color = (bright ? sky : ink).withValues(
+          alpha: bright ? 0.18 : 0.035 + 0.08 * rnd.nextDouble(),
+        );
+        canvas.drawCircle(
+          Offset(x, y),
+          bright ? 1.5 : rnd.nextDouble() * 1.2 + 0.3,
+          starPaint,
+        );
+      }
+      _grain(canvas, size);
+      final vignette = Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(w * 0.5, h * 0.48),
+          span * 0.80,
+          [
+            Colors.transparent,
+            Colors.black.withValues(alpha: p.isLight ? 0.10 : 0.54),
+          ],
+          [0.52, 1],
+        );
+      canvas.drawRect(rect, vignette);
+      return;
+    }
+
     // Three slow caustic bands, painted before the blobs so they read as light
     // under the surface rather than haze on top of it.
-    final cosmic = Color.lerp(p.accent, const Color(0xFF7C6BFF), 0.42)!;
     _caustic(
       canvas,
       Offset(w * 0.36, h * 0.22),
@@ -241,16 +394,6 @@ class _AuroraPainter extends CustomPainter {
       p.accent2,
       0.024,
     );
-
-    void blob(Offset center, double radius, Color color, double alpha) {
-      final shader = ui.Gradient.radial(
-        center,
-        radius,
-        [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
-        [0, 1],
-      );
-      canvas.drawCircle(center, radius, Paint()..shader = shader);
-    }
 
     blob(Offset(w * 0.24, h * 0.20), span * 0.54, p.accent, 0.135);
     blob(Offset(w * 0.84, h * 0.28), span * 0.44, cosmic, 0.08);
@@ -295,6 +438,7 @@ class _AuroraPainter extends CustomPainter {
       old.p.id != p.id ||
       old.p.matte != p.matte ||
       old.lite != lite ||
+      old.p.background != p.background ||
       old.p.accent != p.accent ||
       old.p.night != p.night;
 }

@@ -604,9 +604,18 @@ class Appearance {
   /// but paints opaque, near-black surfaces with no blur or colour reflection.
   String surfaceStyle;
 
+  /// `sora`, `nebula` or `flutter`.
+  String backgroundStyle;
+
   /// Turns off the expensive decorative layers on this PC, independent of the
   /// automatic large-surface check. Stored per shop.
   bool reduceEffects;
+
+  /// Shows the signed-in person's name in the sign-in sequence.
+  bool showOwnerName;
+
+  /// Asks GitHub for the latest public release after startup.
+  bool checkUpdates;
   List<CustomTheme> customs;
 
   Appearance({
@@ -616,7 +625,10 @@ class Appearance {
     this.navPosition = 'side',
     this.dockNav = false,
     this.surfaceStyle = 'glass',
+    this.backgroundStyle = 'sora',
     this.reduceEffects = false,
+    this.showOwnerName = true,
+    this.checkUpdates = true,
     List<CustomTheme>? customs,
   }) : customs =
            customs ??
@@ -645,7 +657,10 @@ class Appearance {
     'navPosition': navPosition,
     'dockNav': dockNav,
     'surfaceStyle': surfaceStyle,
+    'backgroundStyle': backgroundStyle,
     'reduceEffects': reduceEffects,
+    'showOwnerName': showOwnerName,
+    'checkUpdates': checkUpdates,
     'customs': customs.map((c) => c.toJson()).toList(),
   };
 
@@ -660,7 +675,14 @@ class Appearance {
       navPosition: asString(j['navPosition']) == 'top' ? 'top' : 'side',
       dockNav: j['dockNav'] == true,
       surfaceStyle: asString(j['surfaceStyle']) == 'matte' ? 'matte' : 'glass',
+      backgroundStyle: switch (asString(j['backgroundStyle'])) {
+        'nebula' => 'nebula',
+        'flutter' => 'flutter',
+        _ => 'sora',
+      },
       reduceEffects: j['reduceEffects'] == true,
+      showOwnerName: j['showOwnerName'] != false,
+      checkUpdates: j['checkUpdates'] != false,
       customs: list.length == 3
           ? list
           : [...list, ...(Appearance().customs.skip(list.length))],

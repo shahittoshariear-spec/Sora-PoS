@@ -7,7 +7,7 @@ Lyra PoS, but rebuilds the interface, motion and drag handling from scratch. No
 account, no cloud and no internet connection is required to sell.
 
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](#requirements)
-[![Version](https://img.shields.io/badge/version-0.5.0-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.5.0)
+[![Version](https://img.shields.io/badge/version-5.0.1-brightgreen)](https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v5.0.1)
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.7-02569B)](https://flutter.dev)
 [![Rust](https://img.shields.io/badge/Rust-stable-000000)](https://www.rust-lang.org)
 
@@ -86,6 +86,10 @@ account, no cloud and no internet connection is required to sell.
   to the low-memory look automatically
 - A still **Sora Field** background with fine grain, caustic light and depth
   that never drifts, breathes or follows the pointer
+- **Nebula** and **Flutter** background options, both completely still
+- After sign-in, the signed-in person's name resolves in stars below the Sora
+  PoS wordmark
+- Optional update check with an in-app download prompt
 - Theme changes wipe across the screen with a slow, warped edge
 - Reduced-motion support through the Windows setting
 - A goldfish constellation after sign-in, whose stars open into the Sora PoS
@@ -160,13 +164,13 @@ network share.
 
 ## Download and install
 
-The current release is **v0.5.0**:
+The current release is **v5.0.1**:
 
-<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v0.5.0>
+<https://github.com/shahittoshariear-spec/Sora-PoS/releases/tag/v5.0.1>
 
 ### Installer
 
-1. Download `SoraPos-setup-0.5.0.exe`.
+1. Download `SoraPos-setup-5.0.1.exe`.
 2. Run it. The installer is per-user and does not need an administrator prompt.
 3. Launch **Sora PoS** from the Start menu.
 
@@ -348,7 +352,7 @@ With Inno Setup 6 installed:
 powershell -ExecutionPolicy Bypass -File tools/build-installer.ps1
 ```
 
-The installer is written to `release/SoraPos-setup-0.5.0.exe`.
+The installer is written to `release/SoraPos-setup-5.0.1.exe`.
 
 Sora PoS does not use Flutter plugins, so Windows Developer Mode is not
 required. The Rust helper must be copied to `assets/bin/` before building the
@@ -433,10 +437,24 @@ cargo test --manifest-path rust_core/Cargo.toml
 
 ## Version
 
-**0.5.0** — three new themes, a manual reduce-effects switch and a faster,
-quieter interface.
+**5.0.1** — Nebula and Flutter backgrounds, a starry owner-name welcome, update
+checks and a quieter, faster interface.
 
 ## Changelog
+
+### 5.0.1 — 22 Nov 2026
+
+- **Backgrounds:** choose the **Sora Field**, a deep **Nebula** or a calm
+  **Flutter** field in Appearance. All three are still and motion-free.
+- **Startup:** the signed-in person's name now appears in stars after the Sora
+  PoS wordmark. It can be turned off in Appearance.
+- **Updates:** a quiet check after startup offers a newer release when one is
+  available; **Check now** lives in Appearance. The shop keeps working offline.
+- **Motion:** the page title crossfades, page changes settle with a small lift,
+  and the till total pulses when it changes.
+- **Themes:** Deep Ocean, Sakura and Copper (twelve built-in, three custom).
+- **Performance:** a persisted **Reduce effects** switch, a hover-only S.S
+  mark, a faster splash/boot and the existing automatic low-memory path.
 
 ### 0.5.0 — 29 Oct 2026
 

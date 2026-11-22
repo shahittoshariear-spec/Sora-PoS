@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'cart.dart';
+import 'models.dart';
 import 'screens/brand_boot.dart';
 import 'screens/shell.dart';
 import 'screens/signin.dart';
@@ -15,10 +16,12 @@ import 'screens/splash.dart';
 import 'services/email.dart';
 import 'services/native.dart';
 import 'services/paths.dart';
+import 'services/update_check.dart';
 import 'store.dart';
 import 'ui/perf.dart';
 import 'ui/theme.dart';
 import 'ui/theme_switcher.dart';
+import 'widgets/update_prompt.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -131,11 +134,14 @@ class _SoraAppState extends State<SoraApp>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final CartController _cart = CartController();
   final GlobalKey _captureKey = GlobalKey();
+  final GlobalKey<NavigatorState> _navKey = GlobalKey<NavigatorState>();
   late final AnimationController _spreadController;
   ui.Image? _spreadImage;
   Offset? _spreadOrigin;
   bool _spreading = false;
   Timer? _mailTimer;
+  Timer? _updateTimer;
+  bool _updateShown = false;
   String? _chromeTheme;
 
   Store get store => widget.store;
@@ -151,6 +157,9 @@ class _SoraAppState extends State<SoraApp>
     ThemeSwitcher.instance.register(_changeTheme);
     store.addListener(_applyWindowChrome);
     _mailTimer = Timer.periodic(const Duration(minutes: 1), (_) => _tick());
+    if (store.data.appearance.checkUpdates) {
+      _updateTimer = Timer(const Duration(seconds: 12), _checkUpdates);
+    }
     Future<void>.delayed(const Duration(seconds: 20), _tick);
     Future<void>.delayed(const Duration(milliseconds: 900), _applyWindowChrome);
   }
@@ -161,6 +170,7 @@ class _SoraAppState extends State<SoraApp>
     ThemeSwitcher.instance.register(null);
     store.removeListener(_applyWindowChrome);
     _mailTimer?.cancel();
+    _updateTimer?.cancel();
     _spreadController.dispose();
     _spreadImage?.dispose();
     super.dispose();
@@ -172,6 +182,17 @@ class _SoraAppState extends State<SoraApp>
     if (next != SoraPerf.lite && mounted) {
       setState(() => SoraPerf.lite = next);
     }
+  }
+
+  Future<void> _checkUpdates() async {
+    if (_updateShown) return;
+    final info = await checkForUpdate();
+    if (!mounted || info == null || _updateShown) return;
+    if (_cart.lines.isNotEmpty) return;
+    final nav = _navKey.currentState;
+    if (nav == null || nav.canPop()) return;
+    _updateShown = true;
+    await showUpdatePrompt(nav.context, info);
   }
 
   Future<void> _tick() async {
@@ -192,8 +213,9 @@ class _SoraAppState extends State<SoraApp>
   Future<void> _changeTheme(String themeId, Offset? globalOrigin) async {
     if (!mounted) return;
     if (store.data.appearance.themeId == themeId &&
-        !themeId.startsWith('custom'))
+        !themeId.startsWith('custom')) {
       return;
+    }
     if (_spreading) {
       store.data.appearance.themeId = themeId;
       store.changed();
@@ -202,6 +224,9 @@ class _SoraAppState extends State<SoraApp>
 
     final captureContext = _captureKey.currentContext;
     final boundary = captureContext?.findRenderObject();
+    final reduced = captureContext == null
+        ? false
+        : (MediaQuery.maybeOf(captureContext)?.disableAnimations ?? false);
     ui.Image? image;
     if (boundary is RenderRepaintBoundary) {
       try {
@@ -217,9 +242,6 @@ class _SoraAppState extends State<SoraApp>
       return;
     }
 
-    final reduced = captureContext == null
-        ? false
-        : (MediaQuery.maybeOf(captureContext)?.disableAnimations ?? false);
     if (image == null || reduced || SoraPerf.lite || boundary is! RenderBox) {
       image?.dispose();
       store.data.appearance.themeId = themeId;
@@ -265,6 +287,7 @@ class _SoraAppState extends State<SoraApp>
         return MaterialApp(
           title: 'Sora PoS',
           debugShowCheckedModeBanner: false,
+          navigatorKey: _navKey,
           theme: theme,
           scrollBehavior: const _SoraScrollBehavior(),
           builder: (context, child) {
@@ -368,12 +391,22 @@ class _SplashGateState extends State<_SplashGate> {
         cart: widget.cart,
       );
     } else if (_bootedFor != staff.id) {
+      final showName =
+          widget.store.data.appearance.showOwnerName &&
+          staff.name.trim().isNotEmpty;
       child = BrandBootScreen(
         key: ValueKey('boot-${staff.id}'),
         palette: widget.palette,
-        duration: SoraPerf.lite
-            ? const Duration(milliseconds: 1000)
-            : const Duration(milliseconds: 1500),
+        personName: staff.name,
+        personRole: staff.role.label,
+        showPersonName: showName,
+        duration: showName
+            ? (SoraPerf.lite
+                  ? const Duration(milliseconds: 1500)
+                  : const Duration(milliseconds: 2100))
+            : (SoraPerf.lite
+                  ? const Duration(milliseconds: 1000)
+                  : const Duration(milliseconds: 1500)),
         onDone: () => _finishBoot(staff.id),
       );
     } else {

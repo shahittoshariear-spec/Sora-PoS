@@ -13,6 +13,7 @@ import '../ui/kit.dart';
 import '../ui/perf.dart';
 import '../ui/theme.dart';
 import '../ui/theme_switcher.dart';
+import '../widgets/update_prompt.dart';
 
 class SetupScreen extends StatefulWidget {
   final Store store;
@@ -1907,6 +1908,33 @@ class _AppearancePaneState extends State<_AppearancePane> {
           style: TextStyle(fontSize: 10.5, color: p.faint),
         ),
         const SizedBox(height: 24),
+        SectionLabel('BACKGROUND'),
+        const SizedBox(height: 9),
+        SizedBox(
+          width: 540,
+          child: SoraSegmented<String>(
+            values: const ['sora', 'nebula', 'flutter'],
+            selected: appearance.backgroundStyle,
+            label: (v) => switch (v) {
+              'nebula' => 'Nebula',
+              'flutter' => 'Flutter',
+              _ => 'Sora Field',
+            },
+            dense: true,
+            onChanged: (v) {
+              appearance.backgroundStyle = v;
+              store.changed();
+              setState(() {});
+            },
+          ),
+        ),
+        const SizedBox(height: 7),
+        Text(switch (appearance.backgroundStyle) {
+          'nebula' => 'Deep space clouds, a dust lane and a brighter star field. Completely still.',
+          'flutter' => 'A calm Flutter-blue field with soft light beams and a faint mark. Completely still.',
+          _ => 'The layered night, caustic light and fixed stars. The default Sora field.',
+        }, style: TextStyle(fontSize: 10.5, color: p.faint)),
+        const SizedBox(height: 24),
         SectionLabel('PERFORMANCE'),
         const SizedBox(height: 9),
         SwitchRow(
@@ -1925,6 +1953,19 @@ class _AppearancePaneState extends State<_AppearancePane> {
               ? 'The low-memory look is active${appearance.reduceEffects ? ' because you turned it on' : ' for this screen size'}.'
               : 'The full glass look is active.',
           style: TextStyle(fontSize: 10.5, color: p.faint),
+        ),
+        const SizedBox(height: 24),
+        SectionLabel('STARTUP'),
+        const SizedBox(height: 9),
+        SwitchRow(
+          title: 'Show my name after sign-in',
+          subtitle: 'After the Sora PoS wordmark, your name appears in stars before the shop opens.',
+          value: appearance.showOwnerName,
+          onChanged: (v) {
+            appearance.showOwnerName = v;
+            store.changed();
+            setState(() {});
+          },
         ),
         const SizedBox(height: 24),
         SectionLabel('NAVIGATION'),
@@ -1947,6 +1988,25 @@ class _AppearancePaneState extends State<_AppearancePane> {
         Text(
           'The floating dock sits at the bottom of the window and gives the shop its full width.',
           style: TextStyle(fontSize: 10.5, color: p.faint),
+        ),
+        const SizedBox(height: 24),
+        SectionLabel('UPDATES'),
+        const SizedBox(height: 9),
+        SwitchRow(
+          title: 'Check for updates',
+          subtitle: 'One quiet check after startup. The shop works offline if GitHub cannot be reached.',
+          value: appearance.checkUpdates,
+          onChanged: (v) {
+            appearance.checkUpdates = v;
+            store.changed();
+            setState(() {});
+          },
+        ),
+        const SizedBox(height: 9),
+        GlassButton(
+          label: 'Check now',
+          icon: Icons.refresh_rounded,
+          onPressed: () => checkUpdatesNow(context),
         ),
         const SizedBox(height: 24),
         SectionLabel('WHERE THE SCREENS SIT'),

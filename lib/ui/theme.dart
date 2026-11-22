@@ -17,6 +17,7 @@ class SoraPalette {
   final bool custom;
   final double iconHueShift; // degrees, for the three custom slots
   final bool matte; // opaque flat surfaces instead of aurora glass
+  final String background; // sora, nebula or flutter
 
   const SoraPalette({
     required this.id,
@@ -29,6 +30,7 @@ class SoraPalette {
     this.custom = false,
     this.iconHueShift = 0,
     this.matte = false,
+    this.background = 'sora',
   });
 
   static const named = <SoraPalette>[
@@ -169,10 +171,13 @@ class SoraPalette {
         custom: true,
         iconHueShift: shift,
         matte: matte,
+        background: a.backgroundStyle,
       );
     }
     final base = byId(a.themeId);
-    return matte ? base.withMatte(true) : base;
+    return (matte ? base.withMatte(true) : base).withBackground(
+      a.backgroundStyle,
+    );
   }
 
   SoraPalette withMatte(bool value) => SoraPalette(
@@ -186,6 +191,21 @@ class SoraPalette {
     custom: custom,
     iconHueShift: iconHueShift,
     matte: value,
+    background: background,
+  );
+
+  SoraPalette withBackground(String value) => SoraPalette(
+    id: id,
+    name: name,
+    night: night,
+    accent: accent,
+    accent2: accent2,
+    iconAsset: iconAsset,
+    windowIcon: windowIcon,
+    custom: custom,
+    iconHueShift: iconHueShift,
+    matte: matte,
+    background: value,
   );
 
   static double _hueOf(Color c) {

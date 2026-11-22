@@ -9,6 +9,7 @@ import 'package:sora_pos/format.dart';
 import 'package:sora_pos/models.dart';
 import 'package:sora_pos/screens/brand_boot.dart';
 import 'package:sora_pos/screens/till.dart';
+import 'package:sora_pos/services/update_check.dart';
 import 'package:sora_pos/store.dart';
 import 'package:sora_pos/ui/kit.dart';
 import 'package:sora_pos/ui/theme.dart';
@@ -44,6 +45,15 @@ void main() {
       expect(round2(0.1 + 0.2), 0.3);
       expect(numText(2), '2');
       expect(numText(2.5), '2.50');
+    });
+  });
+
+  group('update versions', () {
+    test('dotted release tags compare in order', () {
+      expect(isNewerVersion('v5.0.2', '5.0.1'), isTrue);
+      expect(isNewerVersion('v5.0.1', '5.0.1'), isFalse);
+      expect(isNewerVersion('v5.1', '5.0.9'), isTrue);
+      expect(isNewerVersion('v0.9.9', '5.0.1'), isFalse);
     });
   });
 
@@ -383,6 +393,58 @@ void main() {
     await tester.pump();
     expect(find.text('POINT OF SALE'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 2000));
+    expect(done, isTrue);
+  });
+
+  testWidgets('every field paints in glass and matte', (tester) async {
+    for (final background in ['sora', 'nebula', 'flutter']) {
+      for (final style in ['glass', 'matte']) {
+        final palette = SoraPalette.fromAppearance(
+          Appearance(backgroundStyle: background, surfaceStyle: style),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildSoraTheme(palette, 0),
+            home: Scaffold(
+              body: AuroraBackground(
+                palette: palette,
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: '$background/$style');
+      }
+    }
+  });
+
+  testWidgets('the named boot reveals the name before hand-over', (
+    tester,
+  ) async {
+    var done = false;
+    final palette = SoraPalette.fromAppearance(
+      Appearance(backgroundStyle: 'nebula'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildSoraTheme(palette, 0),
+        home: BrandBootScreen(
+          palette: palette,
+          personName: 'Ren Arn',
+          personRole: 'Owner',
+          showPersonName: true,
+          duration: const Duration(milliseconds: 2100),
+          onDone: () => done = true,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1950));
+    expect(find.text('Ren Arn'), findsOneWidget);
+    expect(find.textContaining('OWNER'), findsOneWidget);
+    expect(done, isFalse);
+    await tester.pump(const Duration(milliseconds: 300));
     expect(done, isTrue);
   });
 }

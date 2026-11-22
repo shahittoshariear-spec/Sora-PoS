@@ -19,12 +19,18 @@ class BrandBootScreen extends StatefulWidget {
   final SoraPalette palette;
   final VoidCallback onDone;
   final Duration duration;
+  final String? personName;
+  final String personRole;
+  final bool showPersonName;
 
   const BrandBootScreen({
     super.key,
     required this.palette,
     required this.onDone,
     this.duration = const Duration(milliseconds: 1750),
+    this.personName,
+    this.personRole = '',
+    this.showPersonName = false,
   });
 
   @override
@@ -130,7 +136,36 @@ class _BrandBootScreenState extends State<BrandBootScreen>
                         Positioned(
                           left: 0,
                           right: 0,
-                          top: 238,
+                          top: 198,
+                          child:
+                              widget.showPersonName &&
+                                  (widget.personName ?? '').trim().isNotEmpty
+                              ? AnimatedBuilder(
+                                  animation: _c,
+                                  child: _BootName(
+                                    palette: p,
+                                    name: widget.personName!.trim(),
+                                    role: widget.personRole,
+                                  ),
+                                  builder: (context, child) {
+                                    final t = reduced ? 1.0 : _c.value;
+                                    final appear = Curves.easeOutCubic
+                                        .transform(_interval(t, 0.80, 0.93));
+                                    return Opacity(
+                                      opacity: appear,
+                                      child: Transform.translate(
+                                        offset: Offset(0, 5 * (1 - appear)),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          top: 282,
                           child: AnimatedBuilder(
                             animation: _c,
                             builder: (context, _) {
@@ -436,13 +471,13 @@ class _ConstellationPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final p = palette;
     final t = time.clamp(0.0, 1.0);
-    const center = Offset(430, 122);
+    const center = Offset(430, 112);
     final wordScale = 690 / _word.bounds.width;
     final wordOrigin = Offset(
       center.dx - _word.bounds.center.dx * wordScale,
       center.dy - _word.bounds.center.dy * wordScale,
     );
-    final fishCenter = Offset(430, 126);
+    final fishCenter = Offset(430, 116);
     const fishScale = 1.12;
 
     Offset wordPoint(int i) => wordOrigin + _word.points[i] * wordScale;
@@ -451,11 +486,11 @@ class _ConstellationPainter extends CustomPainter {
     final settle = Curves.easeOutCubic.transform(_span(t, 0.70, 0.94));
     if (settle > 0) {
       canvas.drawCircle(
-        const Offset(430, 122),
+        const Offset(430, 112),
         360,
         Paint()
           ..shader = ui.Gradient.radial(
-            const Offset(430, 122),
+            const Offset(430, 112),
             360,
             [p.accent.withValues(alpha: 0.060 * settle), Colors.transparent],
             const [0, 1],
@@ -571,4 +606,99 @@ class _ConstellationPainter extends CustomPainter {
       old.palette.accent != palette.accent ||
       old.palette.text != palette.text ||
       old.palette.matte != palette.matte;
+}
+
+/// The signed-in person's name, revealed after the Sora PoS wordmark. The full
+/// look uses a travelling accent gradient; low-memory mode uses flat text.
+class _BootName extends StatelessWidget {
+  final SoraPalette palette;
+  final String name;
+  final String role;
+
+  const _BootName({
+    required this.palette,
+    required this.name,
+    required this.role,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = palette;
+    final roleText = role.trim().isEmpty
+        ? 'WELCOME BACK'
+        : 'WELCOME BACK · ${role.toUpperCase()}';
+    Widget nameWidget = Text(
+      name,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 23,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.35,
+        height: 1.1,
+        color: p.text,
+      ),
+    );
+    if (!SoraPerf.lite) {
+      nameWidget = ShaderMask(
+        blendMode: BlendMode.srcIn,
+        shaderCallback: (bounds) => LinearGradient(
+          colors: [p.accent, p.text, p.accent2, p.accent],
+          stops: const [0, 0.35, 0.7, 1],
+        ).createShader(bounds),
+        child: nameWidget,
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          roleText,
+          textAlign: TextAlign.center,
+          style: overlineStyle(
+            p,
+            color: p.accent.withValues(alpha: 0.88),
+          ).copyWith(letterSpacing: 2.4),
+        ),
+        const SizedBox(height: 5),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 80),
+          child: nameWidget,
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _dot(p.accent.withValues(alpha: 0.55)),
+            Container(
+              width: 26,
+              height: 1,
+              color: p.accent.withValues(alpha: 0.25),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                size: 9,
+                color: p.accent.withValues(alpha: 0.85),
+              ),
+            ),
+            Container(
+              width: 26,
+              height: 1,
+              color: p.accent.withValues(alpha: 0.25),
+            ),
+            _dot(p.accent.withValues(alpha: 0.55)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _dot(Color color) => Container(
+    width: 3,
+    height: 3,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }
